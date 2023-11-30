@@ -1,0 +1,7 @@
+.npm
+.vscode
+node_modules
+src
+.eslintrc
+nodemon.json
+tsconfig.json
