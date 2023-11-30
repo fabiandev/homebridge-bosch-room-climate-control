@@ -1,0 +1,50 @@
+{
+    "pluginAlias": "homebridge-bosch-room-climate-control",
+    "pluginType": "platform",
+    "singular": false,
+    "headerDisplay": "Control multiple Bosch Smart Home devices through room climate control of the BSHC API",
+    "schema": {
+        "type": "object",
+        "properties": {
+            "systemPassword": {
+                "title": "System password (base64 encoded)",
+                "description": "The system password of your Bosch Smart Home Controller (BSHC)",
+                "type": "string",
+                "required": true
+            },
+            "host": {
+                "title": "Host",
+                "description": "The host name / IP Address of BSHC (e.g. 192.168.0.10)",
+                "type": "string",
+                "required": true
+            },
+            "clientName": {
+                "title": "Client name",
+                "description": "The name for the homebridge client that is shown in the Bosch Smart Home app",
+                "type": "string",
+                "required": true,
+                "default": "homebridge-bosch-room-climate-control"
+            },
+            "clientId": {
+                "title": "Client identifier",
+                "description": "Generated automatically if not provided",
+                "type": "string",
+                "required": false
+            },
+            "clientCert": {
+                "title": "Client certificate (base64 encoded)",
+                "description": "Generated automatically if not provided",
+                "type": "string",
+                "required": false
+            },
+            "clientKey": {
+                "title": "Client private key (base64 encoded, 2048bit)",
+                "description": "Generated automatically if not provided",
+                "type": "string",
+                "required": false
+            }
+        }
+    },
+    "form": null,
+    "display": null
+}
