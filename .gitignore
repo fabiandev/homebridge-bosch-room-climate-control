@@ -1,3 +1,5 @@
+.homebridge/*
+!.homebridge/config.example.json
 .npm
 node_modules
 dist
