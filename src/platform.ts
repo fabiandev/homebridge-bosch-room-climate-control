@@ -19,7 +19,6 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     public readonly api: API,
   ) {
     api.on(APIEvent.DID_FINISH_LAUNCHING, () => {
-      this.log.debug('TEST ');
       this.initializeBoschSmartHomeBridge();
       this.initializeRoomClimate();
     });
