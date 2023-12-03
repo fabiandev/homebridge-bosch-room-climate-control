@@ -1,15 +1,11 @@
-export enum Service {
-    CommunicationQuality = 'CommunicationQuality',
-    Thermostat = 'Thermostat',
-    BatteryLevel = 'BatteryLevel',
-    ValveTappet = 'ValveTappet',
-    DisplayedTemperatureConfiguration = 'DisplayedTemperatureConfiguration',
-    DisplayConfiguration = 'DisplayConfiguration',
-    DisplayDirection= 'DisplayDirection',
-    TemperatureLevel = 'TemperatureLevel',
-    Linking ='Linking',
-    TemperatureOffset='TemperatureOffset',
-    ThermostatSupportedControlMode = 'ThermostatSupportedControlMode',
-    TemperatureLevelConfiguration = 'TemperatureLevelConfiguration',
-    RoomClimateControl = 'RoomClimateControl'
-}
+import { ServiceId } from './ServiceId';
+import { StateTypes } from './StateTypes';
+
+export type Service<StateType extends StateTypes = StateTypes> = {
+    '@type': 'DeviceServiceData';
+    id: ServiceId;
+    deviceId: string;
+    state: StateType;
+    operations: string[];
+    path: string;
+};

@@ -1,17 +1,19 @@
-import { switchMap, from, of, pipe, map, mergeMap, filter } from 'rxjs';
+import { concatMap, from, map, filter } from 'rxjs';
 import { API, APIEvent, Characteristic, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service } from 'homebridge';
 import { BoschSmartHomeBridge, BoschSmartHomeBridgeBuilder, BshbResponse, BshbUtils } from 'bosch-smart-home-bridge';
-import { PLUGIN_NAME } from './settings';
-import { Device as BoschDevice, Service as BoschService } from './types';
+import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
+import { Device as BoschDevice, ServiceId as BoschServiceId, Room as BoschRoom, Context } from './types';
 import { pretty } from './utils';
+import { BoschRoomClimateControlAccessory } from './platformAccessory';
 
 export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;
   public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
 
-  public readonly accessories: PlatformAccessory[] = [];
+  public readonly accessories: PlatformAccessory<Context>[] = [];
+  private readonly rooms: BoschRoom[] = [];
 
-  private bshb!: BoschSmartHomeBridge;
+  public bshb!: BoschSmartHomeBridge;
 
   constructor(
     public readonly log: Logger,
@@ -48,22 +50,61 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   initializeRoomClimate() {
     this.bshb
       .getBshcClient()
-      .getDevices()
-      .pipe(switchMap((response: BshbResponse<BoschDevice[]>) => {
-        this.log.info(`Discovered ${(response.parsedResponse.length)} devices`);
-        return from(response.parsedResponse);
-      }), filter(device => {
-        const deviceServiceIds = Object.values(device.deviceServiceIds);
-        return deviceServiceIds?.includes(BoschService.RoomClimateControl)
-          && deviceServiceIds?.includes(BoschService.TemperatureLevel);
-      }), map(device => {
-        this.log.info(`Identified device ${device.id} with room climate control capabilities`);
-        this.log.debug(pretty(device));
-      }))
+      .getRooms()
+      .pipe(
+        concatMap((response: BshbResponse<BoschRoom[]>) => {
+          const rooms = response.parsedResponse;
+
+          this.log.info(`Discovered ${(rooms.length)} rooms`);
+          this.log.debug(pretty(rooms));
+
+          this.rooms.push(...rooms);
+          return this.bshb.getBshcClient().getDevices();
+        }),
+        concatMap((response: BshbResponse<BoschDevice[]>) => {
+          const devices = response.parsedResponse;
+
+          this.log.info(`Discovered ${(devices.length)} devices`);
+
+          return from(devices);
+        }), filter(device => {
+          const deviceServiceIds = Object.values(device.deviceServiceIds);
+
+          return deviceServiceIds?.includes(BoschServiceId.RoomClimateControl)
+            && deviceServiceIds?.includes(BoschServiceId.TemperatureLevel);
+        }), map(device => {
+          this.log.info(`Identified device ${device.id} with room climate control capabilities`);
+          this.log.debug(pretty(device));
+          this.createAccessory(device);
+        }))
       .subscribe();
   }
 
-  configureAccessory(accessory: PlatformAccessory): void {
+  createAccessory(device: BoschDevice) {
+    this.log.info(`Creating accessory for device ${device.id}...`);
+
+    const uuid = this.api.hap.uuid.generate(device.serial);
+    const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);
+
+    if (existingAccessory) {
+      this.log.info(`Restoring accessory for device ${device.id} from cache...`);
+      new BoschRoomClimateControlAccessory(this, existingAccessory);
+      return;
+    }
+
+    this.log.info(`Adding new accessory for device ${device.id}...`);
+
+    const room = this.rooms.find(room => room.id === device.roomId);
+    const accessoryName = `${device.name} ${room?.name}`;
+
+    const accessory = new this.api.platformAccessory<Context>(accessoryName, uuid);
+    accessory.context.device = device;
+
+    new BoschRoomClimateControlAccessory(this, accessory);
+    this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+  }
+
+  configureAccessory(accessory: PlatformAccessory<Context>): void {
     this.accessories.push(accessory);
   }
 
