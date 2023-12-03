@@ -149,15 +149,15 @@ export class BoschRoomClimateControlAccessory {
 
     const state = await lastValueFrom(this.updateLocalState());
 
-    switch(state.deviceState) {
-      case DeviceState.AUTO:
-        return this.platform.Characteristic.CurrentHeatingCoolingState.HEAT;
-      case DeviceState.MANUAL:
-        return this.platform.Characteristic.CurrentHeatingCoolingState.HEAT;
-      case DeviceState.OFF:
-      default:
-        return this.platform.Characteristic.CurrentHeatingCoolingState.OFF;
+    if (state.deviceState === DeviceState.OFF) {
+      return this.platform.Characteristic.CurrentHeatingCoolingState.OFF;
     }
+
+    if (this.state.currentTemperature > this.state.targetTemperature) {
+      return this.platform.Characteristic.CurrentHeatingCoolingState.OFF;
+    }
+
+    return this.platform.Characteristic.CurrentHeatingCoolingState.HEAT;
   }
 
   async handleTargetHeatingCoolingStateGet() {
