@@ -1,3 +1,4 @@
+// TODO: use @type as enum key and use it for requests
 export enum ServiceId {
     CommunicationQuality = 'CommunicationQuality',
     Thermostat = 'Thermostat',

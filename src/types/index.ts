@@ -1,3 +1,4 @@
+// TODO: Prefix Bosch related types with "Bosch" to avoid conflicts
 export * from './ClimateControlState';
 export * from './Context';
 export * from './Device';
