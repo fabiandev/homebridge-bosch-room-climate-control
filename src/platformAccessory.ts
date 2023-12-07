@@ -254,6 +254,9 @@ export class BoschRoomClimateControlAccessory {
             of(response),
           ))),
     );
+
+    await lastValueFrom(this.updateLocalState());
+    this.service.updateCharacteristic(this.platform.Characteristic.TargetTemperature, this.state.targetTemperature);
   }
 
   async handleCurrentTemperatureGet(): Promise<number> {
