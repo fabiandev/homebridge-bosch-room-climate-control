@@ -1,5 +1,6 @@
 .homebridge/*
 !.homebridge/config.example.json
 .npm
+.DS_Store
 node_modules
 dist
