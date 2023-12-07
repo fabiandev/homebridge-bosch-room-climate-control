@@ -1,4 +1,4 @@
-export type TemperatureLevelState = {
+export type BoschTemperatureLevelState = {
     '@type': 'temperatureLevelState';
     temperature: number;
 };

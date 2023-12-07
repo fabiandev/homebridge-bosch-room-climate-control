@@ -2,7 +2,7 @@ import { concatMap, from, map, filter } from 'rxjs';
 import { API, APIEvent, Characteristic, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service } from 'homebridge';
 import { BoschSmartHomeBridge, BoschSmartHomeBridgeBuilder, BshbResponse, BshbUtils } from 'bosch-smart-home-bridge';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
-import { Device as BoschDevice, ServiceId as BoschServiceId, Room as BoschRoom, Context } from './types';
+import { BoschDevice as BoschDevice, BoschServiceId as BoschServiceId, BoschRoom as BoschRoom, AccessoryContext } from './types';
 import { pretty } from './utils';
 import { BoschRoomClimateControlAccessory } from './platformAccessory';
 
@@ -10,7 +10,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;
   public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
 
-  public readonly accessories: PlatformAccessory<Context>[] = [];
+  public readonly accessories: PlatformAccessory<AccessoryContext>[] = [];
   private readonly rooms: BoschRoom[] = [];
 
   public bshb!: BoschSmartHomeBridge;
@@ -47,7 +47,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     this.bshb = bshb;
   }
 
-  initializeRoomClimate() {
+  initializeRoomClimate(): void {
     this.bshb
       .getBshcClient()
       .getRooms()
@@ -80,7 +80,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
       .subscribe();
   }
 
-  createAccessory(device: BoschDevice) {
+  createAccessory(device: BoschDevice): void {
     this.log.info(`Creating accessory for device ${device.id}...`);
 
     const uuid = this.api.hap.uuid.generate(device.serial);
@@ -97,14 +97,14 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     const room = this.rooms.find(room => room.id === device.roomId);
     const accessoryName = `${device.name} ${room?.name}`;
 
-    const accessory = new this.api.platformAccessory<Context>(accessoryName, uuid);
+    const accessory = new this.api.platformAccessory<AccessoryContext>(accessoryName, uuid);
     accessory.context.device = device;
 
     new BoschRoomClimateControlAccessory(this, accessory);
     this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
   }
 
-  configureAccessory(accessory: PlatformAccessory<Context>): void {
+  configureAccessory(accessory: PlatformAccessory<AccessoryContext>): void {
     this.accessories.push(accessory);
   }
 

@@ -1,4 +1,4 @@
-export type Room = {
+export type BoschRoom = {
     '@type': 'room';
     id: string;
     iconId: string;

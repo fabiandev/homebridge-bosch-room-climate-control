@@ -1,23 +1,42 @@
-import { switchMap, from, map, filter, lastValueFrom, iif, of, concatMap } from 'rxjs';
-import { Service, PlatformAccessory } from 'homebridge';
+import { Observable, switchMap, from, map, filter, lastValueFrom, iif, of, concatMap } from 'rxjs';
+import { Service, PlatformAccessory, Characteristic, CharacteristicValue } from 'homebridge';
+
+import * as packageJson from './package.json';
+
+import {
+  AccessoryContext,
+  BoschService,
+  BoschServiceId,
+  BoschOperationMode,
+  BoschRoomControlMode,
+  BoschTemperatureLevelState,
+} from './types';
 
 import { BoschRoomClimateControlPlatform } from './platform';
-import {
-  Context, Service as BoschService, ServiceId as BoschServiceId, OperationMode, RoomControlMode, TemperatureLevelState,
-} from './types';
 import { BshbResponse } from 'bosch-smart-home-bridge';
-import { ClimateControlState } from './types/ClimateControlState';
+import { BoschClimateControlState } from './types/BoschClimateControlState';
 
-enum DeviceState {
+export enum DeviceState {
   AUTO = 'AUTO',
   MANUAL = 'MANUAL',
   OFF = 'OFF',
 }
 
-type AccessoryState = {
+export type AccessoryState = {
   currentTemperature: number;
   targetTemperature: number;
   deviceState: DeviceState;
+};
+
+type SupportedCurrentHeatingCoolingState = {
+  [Characteristic.CurrentHeatingCoolingState.HEAT]: typeof Characteristic.CurrentHeatingCoolingState.HEAT;
+  [Characteristic.CurrentHeatingCoolingState.OFF]: typeof Characteristic.CurrentHeatingCoolingState.OFF;
+};
+
+type SupportedTargetHeatingCoolingState = {
+  [Characteristic.TargetHeatingCoolingState.AUTO]: typeof Characteristic.TargetHeatingCoolingState.AUTO;
+  [Characteristic.TargetHeatingCoolingState.HEAT]: typeof Characteristic.TargetHeatingCoolingState.HEAT;
+  [Characteristic.TargetHeatingCoolingState.OFF]: typeof Characteristic.TargetHeatingCoolingState.OFF;
 };
 
 export class BoschRoomClimateControlAccessory {
@@ -27,30 +46,30 @@ export class BoschRoomClimateControlAccessory {
     deviceState: DeviceState.OFF,
   };
 
+  get type(): typeof Service.Thermostat {
+    return this.platform.Service.Thermostat;
+  }
+
   get service(): Service {
     return this.accessory.getService(this.type) || this.accessory.addService(this.type);
   }
 
-  get type() {
-    return this.platform.Service.Thermostat;
-  }
-
   constructor(
         private readonly platform: BoschRoomClimateControlPlatform,
-        private readonly accessory: PlatformAccessory<Context>,
+        private readonly accessory: PlatformAccessory<AccessoryContext>,
   ) {
     this.platform.log.info(`Creating accessory ${this.accessory.displayName}...`);
 
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
       .setCharacteristic(this.platform.Characteristic.Manufacturer, accessory.context.device.manufacturer)
       .setCharacteristic(this.platform.Characteristic.Model, accessory.context.device.deviceModel)
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, accessory.context.device.serial);
-    // .setCharacteristic(this.platform.Characteristic.FirmwareRevision, packageJson.version);
+      .setCharacteristic(this.platform.Characteristic.SerialNumber, accessory.context.device.serial)
+      .setCharacteristic(this.platform.Characteristic.FirmwareRevision, packageJson.version);
 
     this.registerHandlers();
   }
 
-  registerHandlers() {
+  registerHandlers(): void {
     this.service.getCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState)
       .onGet(this.handleCurrentHeatingCoolingStateGet.bind(this))
       .setProps({
@@ -96,7 +115,23 @@ export class BoschRoomClimateControlAccessory {
       });
   }
 
-  updateLocalState() {
+  isRoomClimateControlService(service: BoschService): service is BoschService<BoschClimateControlState> {
+    if (service.id === BoschServiceId.RoomClimateControl) {
+      return true;
+    }
+
+    return false;
+  }
+
+  isTemperatureLevelService(service: BoschService): service is BoschService<BoschTemperatureLevelState> {
+    if (service.id === BoschServiceId.TemperatureLevel) {
+      return true;
+    }
+
+    return false;
+  }
+
+  updateLocalState(): Observable<AccessoryState> {
     return this.platform.bshb.getBshcClient().getDeviceServices(this.accessory.context.device.id, 'all')
       .pipe(
         switchMap((response: BshbResponse<BoschService[]>) => {
@@ -106,13 +141,13 @@ export class BoschRoomClimateControlAccessory {
           return service.id === BoschServiceId.RoomClimateControl
         || service.id === BoschServiceId.TemperatureLevel;
         }), map(service => {
-          if (service.id === BoschServiceId.RoomClimateControl) {
-            this.state.deviceState = this.extractDeviceState(<ClimateControlState>service.state);
-            this.state.targetTemperature = (service.state as ClimateControlState).setpointTemperature;
+          if (this.isRoomClimateControlService(service)) {
+            this.state.deviceState = this.extractDeviceState(service.state);
+            this.state.targetTemperature = service.state.setpointTemperature;
           }
 
-          if (service.id === BoschServiceId.TemperatureLevel) {
-            this.state.currentTemperature = this.extractCurrentTemperature(<TemperatureLevelState>service.state);
+          if (this.isTemperatureLevelService(service)) {
+            this.state.currentTemperature = this.extractCurrentTemperature(service.state);
           }
 
           return this.state;
@@ -120,31 +155,31 @@ export class BoschRoomClimateControlAccessory {
       );
   }
 
-  extractDeviceState(state: ClimateControlState) {
-    if (state.roomControlMode === RoomControlMode.OFF) {
+  extractDeviceState(state: BoschClimateControlState): DeviceState {
+    if (state.roomControlMode === BoschRoomControlMode.OFF) {
       return DeviceState.OFF;
     }
 
-    if (state.operationMode === OperationMode.AUTOMATIC) {
+    if (state.operationMode === BoschOperationMode.AUTOMATIC) {
       return DeviceState.AUTO;
     }
 
-    if (state.operationMode === OperationMode.MANUAL) {
+    if (state.operationMode === BoschOperationMode.MANUAL) {
       return DeviceState.MANUAL;
     }
 
     return DeviceState.OFF;
   }
 
-  extractCurrentTemperature(state: TemperatureLevelState): number {
+  extractCurrentTemperature(state: BoschTemperatureLevelState): number {
     return state.temperature;
   }
 
-  getPath(deviceId: string, serviceId: BoschServiceId) {
+  getPath(deviceId: string, serviceId: BoschServiceId): string {
     return `devices/${deviceId}/services/${serviceId}`;
   }
 
-  async handleCurrentHeatingCoolingStateGet() {
+  async handleCurrentHeatingCoolingStateGet(): Promise<keyof SupportedCurrentHeatingCoolingState> {
     this.platform.log.debug('Triggered GET CurrentHeatingCoolingState');
 
     const state = await lastValueFrom(this.updateLocalState());
@@ -160,7 +195,7 @@ export class BoschRoomClimateControlAccessory {
     return this.platform.Characteristic.CurrentHeatingCoolingState.HEAT;
   }
 
-  async handleTargetHeatingCoolingStateGet() {
+  async handleTargetHeatingCoolingStateGet(): Promise<keyof SupportedTargetHeatingCoolingState> {
     this.platform.log.debug('Triggered GET TargetHeatingCoolingState');
 
     const state = await lastValueFrom(this.updateLocalState());
@@ -176,7 +211,7 @@ export class BoschRoomClimateControlAccessory {
     }
   }
 
-  async handleTargetHeatingCoolingStateSet(value) {
+  async handleTargetHeatingCoolingStateSet(value: CharacteristicValue): Promise<void> {
     this.platform.log.debug('Triggered SET TargetHeatingCoolingState:', value);
 
     const deviceId = this.accessory.context.device.id;
@@ -192,15 +227,15 @@ export class BoschRoomClimateControlAccessory {
 
     switch(value) {
       case this.platform.Characteristic.TargetHeatingCoolingState.AUTO:
-        operationModeState['operationMode'] = OperationMode.AUTOMATIC;
-        roomControlModeState['roomControlMode'] = RoomControlMode.HEATING;
+        operationModeState['operationMode'] = BoschOperationMode.AUTOMATIC;
+        roomControlModeState['roomControlMode'] = BoschRoomControlMode.HEATING;
         break;
       case this.platform.Characteristic.TargetHeatingCoolingState.HEAT:
-        operationModeState['operationMode'] = OperationMode.MANUAL;
-        roomControlModeState['roomControlMode'] = RoomControlMode.HEATING;
+        operationModeState['operationMode'] = BoschOperationMode.MANUAL;
+        roomControlModeState['roomControlMode'] = BoschRoomControlMode.HEATING;
         break;
       case this.platform.Characteristic.TargetHeatingCoolingState.OFF:
-        roomControlModeState['roomControlMode'] = RoomControlMode.OFF;
+        roomControlModeState['roomControlMode'] = BoschRoomControlMode.OFF;
         break;
       default:
         throw new Error('Unknown target heating cooling state');
@@ -221,29 +256,29 @@ export class BoschRoomClimateControlAccessory {
     );
   }
 
-  async handleCurrentTemperatureGet() {
+  async handleCurrentTemperatureGet(): Promise<number> {
     this.platform.log.debug('Triggered GET CurrentTemperature');
 
     const state = await lastValueFrom(this.updateLocalState());
     return state.currentTemperature;
   }
 
-  async handleTargetTemperatureGet() {
+  async handleTargetTemperatureGet(): Promise<number> {
     this.platform.log.debug('Triggered GET TargetTemperature');
 
     const state = await lastValueFrom(this.updateLocalState());
     return state.targetTemperature;
   }
 
-  async handleTargetTemperatureSet(value) {
+  async handleTargetTemperatureSet(value: CharacteristicValue): Promise<void> {
     this.platform.log.debug('Triggered SET TargetTemperature:', value);
 
     const deviceId = this.accessory.context.device.id;
     const serviceId = BoschServiceId.RoomClimateControl;
 
-    const state = {
+    const state: Partial<BoschClimateControlState> = {
       '@type': 'climateControlState',
-      setpointTemperature: value,
+      setpointTemperature: Number(value),
     };
 
     await lastValueFrom(
@@ -253,13 +288,12 @@ export class BoschRoomClimateControlAccessory {
     );
   }
 
-  async handleTemperatureDisplayUnitsGet() {
+  async handleTemperatureDisplayUnitsGet(): Promise<number> {
     this.platform.log.debug('Triggered GET TemperatureDisplayUnits');
     return this.platform.Characteristic.TemperatureDisplayUnits.CELSIUS;
   }
 
-  async handleTemperatureDisplayUnitsSet(value) {
+  async handleTemperatureDisplayUnitsSet(value: CharacteristicValue): Promise<void> {
     this.platform.log.debug('Triggered SET TemperatureDisplayUnits:', value);
-    return Promise.resolve();
   }
 }

@@ -1,9 +1,9 @@
-import { OperationMode } from './OperationMode';
-import { RoomControlMode } from './RoomControlMode';
+import { BoschOperationMode } from './BoschOperationMode';
+import { BoschRoomControlMode } from './BoschRoomControlMode';
 
-export type ClimateControlState = {
+export type BoschClimateControlState = {
     '@type': 'climateControlState';
-    operationMode: OperationMode;
+    operationMode: BoschOperationMode;
     setpointTemperature: number;
     setpointTemperatureForLevelEco: number;
     setpointTemperatureForLevelComfort: number;
@@ -13,7 +13,7 @@ export type ClimateControlState = {
     boostMode: boolean;
     summerMode: boolean;
     supportsBoostMode: boolean;
-    roomControlMode: RoomControlMode;
+    roomControlMode: BoschRoomControlMode;
     activeScheduleId: string;
     setPointTemperatureOffset: number;
     isSetPointTemperatureOffsetActive: false;

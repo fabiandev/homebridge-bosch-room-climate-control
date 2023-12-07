@@ -1,4 +1,4 @@
-export enum OperationMode {
+export enum BoschOperationMode {
     AUTOMATIC = 'AUTOMATIC',
     MANUAL = 'MANUAL'
 }

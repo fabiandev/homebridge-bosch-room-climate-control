@@ -1,17 +1,17 @@
-import { Status, ServiceId } from './';
+import { BoschStatus, BoschServiceId } from '.';
 
-export type Device = {
+export type BoschDevice = {
     '@type': 'device';
     rootDeviceId: string;
     id: string;
-    deviceServiceIds: ServiceId[];
+    deviceServiceIds: BoschServiceId[];
     manufacturer: string;
     roomId: string;
     deviceModel: string;
     serial: string;
     profile: string;
     name: string;
-    status: Status;
+    status: BoschStatus;
     parentDeviceId?: string;
     childDeviceIds: [];
     supportedProfiles: [];
