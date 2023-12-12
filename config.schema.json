@@ -6,6 +6,13 @@
     "schema": {
         "type": "object",
         "properties": {
+            "periodicUpdates": {
+                "title": "Refresh all accessories after specified amount of minutes (-1 = disabled)",
+                "description": "The plugin reacts to changes of accessories, a periodic refresh is not required, but can be enabled",
+                "type": "number",
+                "default": -1,
+                "required": false
+            },
             "systemPassword": {
                 "title": "System password (base64 encoded)",
                 "description": "The system password of your Bosch Smart Home Controller (BSHC)",

@@ -3,6 +3,7 @@
         {
             "name": "homebridge-bosch-room-climate-control",
             "platform": "BoschRoomClimateControl",
+            "periodicUpdates": -1,
             "systemPassword": "c2VjcmV0",
             "host": "192.168.0.10",
             "clientName": "My Client Name",

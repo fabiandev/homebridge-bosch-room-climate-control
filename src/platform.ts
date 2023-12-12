@@ -2,7 +2,13 @@ import { concatMap, from, map, filter } from 'rxjs';
 import { API, APIEvent, Characteristic, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service } from 'homebridge';
 import { BoschSmartHomeBridge, BoschSmartHomeBridgeBuilder, BshbResponse, BshbUtils } from 'bosch-smart-home-bridge';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
-import { BoschDevice as BoschDevice, BoschServiceId as BoschServiceId, BoschRoom as BoschRoom, AccessoryContext } from './types';
+import {
+  BoschDevice,
+  BoschServiceId,
+  BoschRoom,
+  AccessoryContext,
+  BoschDeviceServiceData,
+} from './types';
 import { pretty } from './utils';
 import { BoschRoomClimateControlAccessory } from './platformAccessory';
 
@@ -10,10 +16,13 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;
   public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
 
-  public readonly accessories: PlatformAccessory<AccessoryContext>[] = [];
+  public bshb!: BoschSmartHomeBridge;
+
+  private readonly roomClimateControlAccessories: BoschRoomClimateControlAccessory[] = [];
+  private readonly platformAccessories: PlatformAccessory<AccessoryContext>[] = [];
   private readonly rooms: BoschRoom[] = [];
 
-  public bshb!: BoschSmartHomeBridge;
+  private longPollingId: string | null = null;
 
   constructor(
     public readonly log: Logger,
@@ -23,10 +32,23 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     api.on(APIEvent.DID_FINISH_LAUNCHING, () => {
       this.initializeBoschSmartHomeBridge();
       this.initializeRoomClimate();
+      this.startLongPolling();
+    });
+
+    api.on(APIEvent.SHUTDOWN, () => {
+      this.stopLongPolling();
+
+      this.roomClimateControlAccessories.forEach(accessory => {
+        accessory.dispose();
+      });
     });
   }
 
-  initializeBoschSmartHomeBridge(): void {
+  configureAccessory(accessory: PlatformAccessory<AccessoryContext>): void {
+    this.platformAccessories.push(accessory);
+  }
+
+  private initializeBoschSmartHomeBridge(): void {
     const certificate = BshbUtils.generateClientCertificate();
     const bshb = BoschSmartHomeBridgeBuilder.builder()
       .withHost(this.config.host)
@@ -47,7 +69,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     this.bshb = bshb;
   }
 
-  initializeRoomClimate(): void {
+  private initializeRoomClimate(): void {
     this.bshb
       .getBshcClient()
       .getRooms()
@@ -80,15 +102,90 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
       .subscribe();
   }
 
-  createAccessory(device: BoschDevice): void {
+  private startLongPolling(): void {
+    if(this.longPollingId != null) {
+      this.log.debug('Long polling has already been started');
+      return;
+    }
+
+    this.bshb
+      .getBshcClient()
+      .subscribe()
+      .subscribe((response) => {
+        this.longPollingId = response.parsedResponse.result;
+
+        if (this.longPollingId == null) {
+          this.log.info('Could not start long polling');
+          return;
+        }
+
+        this.poll();
+      });
+  }
+
+  private poll(): void {
+    if (this.longPollingId == null) {
+      this.log.debug('Cannot long poll without an ID');
+      return;
+    }
+
+    this.bshb
+      .getBshcClient()
+      .longPolling(this.longPollingId)
+      .subscribe((response: BshbResponse<{
+        jsonrpc: string;
+        result: BoschDeviceServiceData[];
+      }>) => {
+        this.handleLongPollingResult(response.parsedResponse.result);
+        this.poll();
+      });
+  }
+
+  private stopLongPolling(): void {
+    if (this.longPollingId == null) {
+      this.log.debug('Cannot stop long polling without an ID');
+      return;
+    }
+
+    const longPollingId = this.longPollingId;
+    this.longPollingId = null;
+
+    this.bshb
+      .getBshcClient()
+      .unsubscribe(longPollingId)
+      .subscribe(() => {});
+  }
+
+  private handleLongPollingResult(deviceServiceDataResult: BoschDeviceServiceData[]) {
+    this.log.debug('Handeling long polling result...');
+    this.log.debug(pretty(deviceServiceDataResult));
+
+    for (const deviceServiceData of deviceServiceDataResult) {
+      const accessory = this.roomClimateControlAccessories.find(accessory => {
+        return accessory.platformAccessory.context.device.id === deviceServiceData.deviceId;
+      });
+
+      if (accessory != null) {
+        accessory.handleDeviceServiceDataUpdate(deviceServiceData);
+      }
+    }
+  }
+
+  private createAccessory(device: BoschDevice): void {
     this.log.info(`Creating accessory for device ${device.id}...`);
 
     const uuid = this.api.hap.uuid.generate(device.serial);
-    const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);
+    const existingAccessory = this.platformAccessories.find(accessory => accessory.UUID === uuid);
 
     if (existingAccessory) {
       this.log.info(`Restoring accessory for device ${device.id} from cache...`);
-      new BoschRoomClimateControlAccessory(this, existingAccessory);
+
+      existingAccessory.context.device = device;
+      this.api.updatePlatformAccessories([existingAccessory]);
+
+      const roomClimateControlAccessory = new BoschRoomClimateControlAccessory(this, existingAccessory);
+      this.roomClimateControlAccessories.push(roomClimateControlAccessory);
+
       return;
     }
 
@@ -100,12 +197,9 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     const accessory = new this.api.platformAccessory<AccessoryContext>(accessoryName, uuid);
     accessory.context.device = device;
 
-    new BoschRoomClimateControlAccessory(this, accessory);
     this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-  }
 
-  configureAccessory(accessory: PlatformAccessory<AccessoryContext>): void {
-    this.accessories.push(accessory);
+    const roomClimateControlAccessory = new BoschRoomClimateControlAccessory(this, accessory);
+    this.roomClimateControlAccessories.push(roomClimateControlAccessory);
   }
-
 }
