@@ -1,7 +1,11 @@
 import { concatMap, from, map, filter } from 'rxjs';
 import { API, APIEvent, Characteristic, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service } from 'homebridge';
 import { BoschSmartHomeBridge, BoschSmartHomeBridgeBuilder, BshbResponse, BshbUtils } from 'bosch-smart-home-bridge';
+
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
+import { pretty } from './utils';
+import { BoschRoomClimateControlAccessory } from './platformAccessory';
+
 import {
   BoschDevice,
   BoschServiceId,
@@ -9,8 +13,6 @@ import {
   AccessoryContext,
   BoschDeviceServiceData,
 } from './types';
-import { pretty } from './utils';
-import { BoschRoomClimateControlAccessory } from './platformAccessory';
 
 export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;

@@ -1,7 +1,11 @@
 import { Observable, switchMap, from, map, filter, lastValueFrom, iif, of, concatMap } from 'rxjs';
 import { Service, PlatformAccessory, Characteristic, CharacteristicValue, Logger } from 'homebridge';
+import { BshbResponse } from 'bosch-smart-home-bridge';
 
 import * as packageJson from './package.json';
+import { BoschRoomClimateControlPlatform } from './platform';
+import { BoschClimateControlState } from './types/BoschClimateControlState';
+import { pretty } from './utils';
 
 import {
   AccessoryContext,
@@ -11,11 +15,6 @@ import {
   BoschRoomControlMode,
   BoschTemperatureLevelState,
 } from './types';
-
-import { BoschRoomClimateControlPlatform } from './platform';
-import { BshbResponse } from 'bosch-smart-home-bridge';
-import { BoschClimateControlState } from './types/BoschClimateControlState';
-import { pretty } from './utils';
 
 export enum DeviceState {
   AUTO = 'AUTO',
