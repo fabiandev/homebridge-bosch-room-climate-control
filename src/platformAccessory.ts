@@ -40,7 +40,6 @@ type SupportedTargetHeatingCoolingState = {
 };
 
 export class BoschRoomClimateControlAccessory {
-  private log!: Logger;
   private timeoutId!: NodeJS.Timeout;
 
   private state: AccessoryState = {
@@ -61,8 +60,6 @@ export class BoschRoomClimateControlAccessory {
         readonly platform: BoschRoomClimateControlPlatform,
         readonly platformAccessory: PlatformAccessory<AccessoryContext>,
   ) {
-    this.initializeLogger();
-
     this.log.info('Creating accessory...');
 
     this.platformAccessory.getService(this.platform.Service.AccessoryInformation)!
@@ -94,7 +91,7 @@ export class BoschRoomClimateControlAccessory {
     this.updateCharacteristicStateWitAccessoryState(state, deviceServiceData);
   }
 
-  private initializeLogger() {
+  private get log(): Logger {
     const prefix = `[${this.platformAccessory.displayName}]`;
 
     const logger = (method: string) => {
@@ -103,7 +100,7 @@ export class BoschRoomClimateControlAccessory {
       };
     };
 
-    this.log = {
+    return {
       debug: logger('debug'),
       info: logger('info'),
       warn: logger('warn'),
