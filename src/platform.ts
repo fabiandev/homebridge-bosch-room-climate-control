@@ -87,6 +87,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
           const devices = response.parsedResponse;
 
           this.log.info(`Discovered ${(devices.length)} devices`);
+          this.log.debug(pretty(devices));
 
           return from(devices);
         }), filter(device => {
@@ -103,8 +104,10 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   }
 
   private startLongPolling(): void {
+    this.log.debug('Attempting to start long polling...');
+
     if(this.longPollingId != null) {
-      this.log.debug('Long polling has already been started');
+      this.log.debug(`Long polling has already been started with ID ${this.longPollingId}`);
       return;
     }
 
@@ -129,6 +132,8 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
       return;
     }
 
+    this.log.debug(`Opening long polling connection with ID ${this.longPollingId}...`);
+
     this.bshb
       .getBshcClient()
       .longPolling(this.longPollingId)
@@ -146,6 +151,8 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
       this.log.debug('Cannot stop long polling without an ID');
       return;
     }
+
+    this.log.debug('Attempting to stop long polling...');
 
     const longPollingId = this.longPollingId;
     this.longPollingId = null;
@@ -172,13 +179,13 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   }
 
   private createAccessory(device: BoschDevice): void {
-    this.log.info(`Creating accessory for device ${device.id}...`);
+    this.log.info(`Creating accessory for device ID ${device.id}...`);
 
     const uuid = this.api.hap.uuid.generate(device.serial);
     const existingAccessory = this.platformAccessories.find(accessory => accessory.UUID === uuid);
 
     if (existingAccessory) {
-      this.log.info(`Restoring accessory for device ${device.id} from cache...`);
+      this.log.info(`Restoring accessory for device ID ${device.id} from cache...`);
 
       existingAccessory.context.device = device;
       this.api.updatePlatformAccessories([existingAccessory]);
@@ -189,7 +196,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
       return;
     }
 
-    this.log.info(`Adding new accessory for device ${device.id}...`);
+    this.log.info(`Adding new accessory for device ID ${device.id}...`);
 
     const room = this.rooms.find(room => room.id === device.roomId);
     const accessoryName = `${device.name} ${room?.name}`;
