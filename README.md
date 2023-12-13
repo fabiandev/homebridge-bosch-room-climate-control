@@ -6,11 +6,11 @@ This [Homebridge](https://github.com/homebridge/homebridge) plugin implements **
 
 ## Why not use the built-in HomeKit integration?
 
-The official and built-in HomeKit integration for Bosch Smart Home Thermostats is functionally limited. Currently it is not possible to control thermostats that are grouped into a room (room climate control), to switch between manual and automatic mode, or to turn the heating on and off.
+The official and built-in HomeKit integration for Bosch Smart Home thermostats is functionally limited. Currently it is not possible to control thermostats that are grouped into a room (room climate control), to switch between manual and automatic mode, or to turn the heating on and off.
 
 ## Getting started
 
-1. Generate an OpenSSL key pair (see the [API docs of the BSHC](https://github.com/BoschSmartHome/bosch-shc-api-docs/tree/master/postman#import-the-collection-the-environment-the-certificate-and-the-key-into-postman) for more details)
+1. Generate an OpenSSL key pair (see the [API docs of the BSHC](https://github.com/BoschSmartHome/bosch-shc-api-docs/tree/master/postman) for more details)
 ```sh
 openssl req -x509 -nodes -days 9999 -newkey rsa:2048 -keyout client-key.pem -out client-cert.pem
 ```
