@@ -1,8 +1,8 @@
 # homebridge-bosch-room-climate-control
 
-This plugin implements *room climate control* in HomeKit through a *virtual thermostat*. Events from the Bosch Smart Home Controller (BSHC) are consumed via long polling, which means that all *changes* also from outside of HomeKit (e.g., physical control of a room thermostat or radiator thermostat, updates made via the Bosch Smart Home App, a change of the room temperature, etc.) are *immediately reflected* and updated *in HomeKit*, without a manual refresh or accessory update.
+This plugin implements **room climate control** in HomeKit through a **virtual thermostat**. Events from the Bosch Smart Home Controller (BSHC) are consumed via long polling, which means that all **changes** also from outside of HomeKit (e.g., physical control of a room thermostat or radiator thermostat, updates made via the Bosch Smart Home App, a change of the room temperature, etc.) are **immediately reflected** and updated **in HomeKit**, without a manual refresh or accessory update.
 
-> Note: This plugin has only been tested manually with Radiator Thermostats II only and is at an early stage where unexpected behavior may occur
+> Note: This plugin has only been tested manually with Radiator Thermostats II and is at an early stage where unexpected behavior may occur
 
 # Why not using the built-in HomeKit integration?
 
@@ -16,7 +16,7 @@ openssl req -x509 -nodes -days 9999 -newkey rsa:2048 -keyout client-key.pem -out
 ```
 2. Encode your system password
 ```sh
-`echo -n 'secret' | openssl base64`
+echo -n 'secret' | openssl base64
 ```
 3. Set the contents of the certificate and key, the encoded system password, the IP address of the BSHC, and other configuration options as shown in [`.homebridge/config.example.json`](.homebridge/config.example.json) via the Homebridge UI (or by creating a `.homebridge/config.json` file).
 4. Press the pair button on the BSHC before starting the plugin for the first time
@@ -32,5 +32,5 @@ See [`config.schema.json`](config.schema.json)
 
 ## Contributing
 
-Please consider to open a PR if you have suggestions for improvements or discovered a potential bug.
+Please consider opening a PR if you have suggestions for improvements or spot a potential bug
 
