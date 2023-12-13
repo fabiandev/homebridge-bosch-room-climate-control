@@ -4,7 +4,7 @@ This plugin implements **room climate control** in HomeKit through a **virtual t
 
 > Note: This plugin has only been tested manually with Radiator Thermostats II and is at an early stage where unexpected behavior may occur
 
-## Why not using the built-in HomeKit integration?
+## Why not use the built-in HomeKit integration?
 
 The official and built-in HomeKit integration for Bosch Smart Home Thermostats is functionally limited. Currently it is not possible to control thermostats that are grouped into a room (room climate control), to switch between manual and automatic mode, or to turn the heating on and off.
 
