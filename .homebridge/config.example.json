@@ -3,13 +3,13 @@
         {
             "name": "homebridge-bosch-room-climate-control",
             "platform": "BoschRoomClimateControl",
-            "periodicUpdates": -1,
             "systemPassword": "c2VjcmV0",
             "host": "192.168.0.10",
-            "clientName": "My Client Name",
-            "clientId": "my-client-id",
+            "clientName": "Homebridge Room Climate Control",
+            "clientId": "homebridge-bosch-room-climate-control",
             "clientCert": "-----BEGIN CERTIFICATE-----\nBASE64_CERTIFICATE\n-----END CERTIFICATE-----",
-            "clientKey": "-----BEGIN RSA PRIVATE KEY-----\nBASE64_PRIVATE_KEY\n-----END RSA PRIVATE KEY-----"
+            "clientKey": "-----BEGIN RSA PRIVATE KEY-----\nBASE64_PRIVATE_KEY\n-----END RSA PRIVATE KEY-----",
+            "periodicUpdates": -1
         }
     ]
 }

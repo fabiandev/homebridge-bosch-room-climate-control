@@ -6,13 +6,6 @@
     "schema": {
         "type": "object",
         "properties": {
-            "periodicUpdates": {
-                "title": "Refresh all accessories after specified amount of minutes (-1 = disabled)",
-                "description": "The plugin reacts to changes of accessories, a periodic refresh is not required, but can be enabled",
-                "type": "number",
-                "default": -1,
-                "required": false
-            },
             "systemPassword": {
                 "title": "System password (base64 encoded)",
                 "description": "The system password of your Bosch Smart Home Controller (BSHC)",
@@ -30,24 +23,32 @@
                 "description": "The name for the homebridge client that is shown in the Bosch Smart Home app",
                 "type": "string",
                 "required": true,
-                "default": "homebridge-bosch-room-climate-control"
+                "default": "Homebridge Room Climate Control"
             },
             "clientId": {
                 "title": "Client identifier",
                 "description": "Generated automatically if not provided",
                 "type": "string",
-                "required": false
+                "required": false,
+                "default": "homebridge-bosch-room-climate-control"
             },
             "clientCert": {
                 "title": "Client certificate (base64 encoded)",
-                "description": "Generated automatically if not provided",
+                "description": "Generated automatically if possoble, unless provided here",
                 "type": "string",
                 "required": false
             },
             "clientKey": {
                 "title": "Client private key (base64 encoded, 2048bit)",
-                "description": "Generated automatically if not provided",
+                "description": "Generated automatically if possible, unless provided here",
                 "type": "string",
+                "required": false
+            },
+            "periodicUpdates": {
+                "title": "Refresh all accessories after specified amount of minutes (0 or lower = disabled)",
+                "description": "The plugin reacts to changes of accessories, a periodic refresh is not required and does not disable event based updates through long polling",
+                "type": "number",
+                "default": -1,
                 "required": false
             }
         }
