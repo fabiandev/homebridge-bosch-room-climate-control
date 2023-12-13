@@ -96,6 +96,7 @@ export class BoschRoomClimateControlAccessory {
 
   private initializeLogger() {
     const prefix = `[${this.platformAccessory.displayName}]`;
+
     const logger = (method: string) => {
       return (message: string, ...parameters: any[]) => {
         return this.platform.log[method](`${prefix} ${message}`, ...parameters);
