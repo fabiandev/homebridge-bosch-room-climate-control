@@ -133,6 +133,11 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private cancelPeriodicUpdates(): void {
+    if (this.timeoutId == null) {
+      return;
+    }
+
+    this.log.debug('Stopping periodic updates...');
     clearTimeout(this.timeoutId);
   }
 
@@ -371,7 +376,7 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async handleCurrentTemperatureGet(): Promise<number> {
-    this.log.debug('Getting current temperature');
+    this.log.debug('Getting current temperature...');
 
     const state = this.getLocalState();
     return state.currentTemperature;
