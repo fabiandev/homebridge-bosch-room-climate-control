@@ -1,5 +1,5 @@
 {
-    "pluginAlias": "homebridge-bosch-room-climate-control",
+    "pluginAlias": "BoschRoomClimateControl",
     "pluginType": "platform",
     "singular": false,
     "headerDisplay": "Control multiple Bosch Smart Home devices through room climate control of the BSHC API",
