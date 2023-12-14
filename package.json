@@ -3,7 +3,7 @@
   "version": "1.0.2",
   "description": "Control multiple Bosch Smart Home devices through room climate control of the BSHC API",
   "engines": {
-    "node": ">=18.17.0",
+    "node": ">=18.16.0",
     "homebridge": ">=1.6.0"
   },
   "main": "dist/index.js",
