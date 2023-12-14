@@ -1,6 +1,6 @@
 # homebridge-bosch-room-climate-control
 
-<img src="accessory.png" width="180" align="right" alt="HomeKit integration for Bosch room climate control">
+<img src="accessory.png" width="210" align="right" alt="HomeKit integration for Bosch room climate control">
 
 This [Homebridge](https://github.com/homebridge/homebridge) plugin implements **room climate control** in HomeKit through a **virtual thermostat**. Events from the Bosch Smart Home Controller (BSHC) are consumed via long polling, which means that all **changes** also from outside of HomeKit (e.g., physical control of a room thermostat or radiator thermostat, updates made via the Bosch Smart Home App, a change of the room temperature, etc.) are **immediately reflected** and updated **in HomeKit**, without a manual refresh or accessory update.
 
