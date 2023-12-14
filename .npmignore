@@ -1,8 +1,10 @@
+.homebridge
 .npm
 .vscode
 .DS_Store
 node_modules
 src
 .eslintrc
+.gitignore
 nodemon.json
 tsconfig.json
