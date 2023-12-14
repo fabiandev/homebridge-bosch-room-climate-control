@@ -18,12 +18,29 @@ openssl req -x509 -nodes -days 9999 -newkey rsa:2048 -keyout client-key.pem -out
 ```sh
 echo -n 'secret' | openssl base64
 ```
-3. Set the contents of the certificate and key, the encoded system password, the IP address of the BSHC, and other configuration options as shown in [`.homebridge/config.example.json`](.homebridge/config.example.json) via the Homebridge UI (or by creating a `.homebridge/config.json` file).
+3. Set the contents of the certificate and key, the encoded system password, the IP address of the BSHC, and other configuration options as shown in [`.homebridge/config.example.json`](.homebridge/config.example.json) via the Homebridge UI (or by creating a `.homebridge/config.json` file)
 4. Press the pair button on the BSHC before starting the plugin for the first time
 
 ## Settings
 
 See [`config.schema.json`](config.schema.json)
+
+## HomeKit Accessory
+
+<img src="accessory.png" width="256" align="right" alt="HomeKit integration for Bosch room climate control">
+
+**Modes**
+
+The accessory is subscribed to events from the BSHC and will update its state automatically when switching between modes
+
+- `AUTO` Sets the operation mode to automatic (using the defined schedules for the room climate)
+- `HEAT` Sets the operation mode to manual (heating to the defined target temperature)
+- `OFF` Sets the room control mode to off (pauses heating, setting the target temperature to 5°C)
+
+**Temperature**
+
+- Current temperature: Measured temperature changes are reflected in realtime through events from the BSHC
+- Target temperatur: Changes from outside (e.g., through the Bosch Smart Home app) are also reflected immediately
 
 ## Credits
 

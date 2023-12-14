@@ -20,14 +20,14 @@
             },
             "clientName": {
                 "title": "Client name",
-                "description": "The name for the homebridge client that is shown in the Bosch Smart Home app",
+                "description": "The name for the homebridge client that is shown in the Bosch Smart Home app ('OSS ' prefix is added automatically)",
                 "type": "string",
                 "required": true,
                 "default": "Homebridge Room Climate Control"
             },
             "clientId": {
                 "title": "Client identifier",
-                "description": "Generated automatically if not provided",
+                "description": "Generated automatically if not provided ('oss_' prefix is added automatically)",
                 "type": "string",
                 "required": false,
                 "default": "homebridge-bosch-room-climate-control"
