@@ -33,13 +33,13 @@
                 "default": "homebridge-bosch-room-climate-control"
             },
             "clientCert": {
-                "title": "Client certificate (base64 encoded)",
+                "title": "Client certificate (base64 encoded content only without BEGIN/END)",
                 "description": "Generated automatically if possoble, unless provided here",
                 "type": "string",
                 "required": false
             },
             "clientKey": {
-                "title": "Client private key (base64 encoded, 2048bit)",
+                "title": "Client private key (base64 encoded content only without BEGIN/END, 2048bit)",
                 "description": "Generated automatically if possible, unless provided here",
                 "type": "string",
                 "required": false

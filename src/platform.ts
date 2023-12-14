@@ -51,11 +51,15 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   }
 
   private initializeBoschSmartHomeBridge(): void {
-    const certificate = BshbUtils.generateClientCertificate();
+    const certificate = this.config.clientCert != null ? {
+      cert: '-----BEGIN CERTIFICATE-----\n' + this.config.clientCert + '\n-----END CERTIFICATE-----',
+      private: '-----BEGIN RSA PRIVATE KEY-----\n' + this.config.clientKey + '\n-----END RSA PRIVATE KEY-----',
+    } : BshbUtils.generateClientCertificate();
+
     const bshb = BoschSmartHomeBridgeBuilder.builder()
       .withHost(this.config.host)
-      .withClientCert(this.config.clientCert ?? certificate.cert)
-      .withClientPrivateKey(this.config.clientKey ??certificate.private)
+      .withClientCert(certificate.cert)
+      .withClientPrivateKey(certificate.private)
       .build();
 
     const clientName = this.config.clientName ?? PLUGIN_NAME;
