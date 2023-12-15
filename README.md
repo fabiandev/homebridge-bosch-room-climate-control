@@ -10,19 +10,21 @@ This [Homebridge](https://github.com/homebridge/homebridge) plugin implements **
 
 The official and built-in HomeKit integration for Bosch Smart Home thermostats is functionally limited. Currently it is not possible to control thermostats that are grouped into a room (room climate control), to switch between manual and automatic mode, or to turn the heating on and off.
 
-## Getting started
+## Getting Started
 
-1. Generate an OpenSSL key pair (see the [API docs of the BSHC](https://github.com/BoschSmartHome/bosch-shc-api-docs/tree/master/postman) for more details)
-```sh
-openssl req -x509 -nodes -days 9999 -newkey rsa:2048 -keyout client-key.pem -out client-cert.pem
-```
-2. Encode your system password
-```sh
-echo -n 'secret' | openssl base64
-```
-3. Set the contents of the certificate and key, the encoded system password, the IP address of the BSHC, and other configuration options as shown in [`.homebridge/config.example.json`](.homebridge/config.example.json) via the Homebridge UI (or by creating a `.homebridge/config.json` file)
-4. Press the pair button on the BSHC before starting the plugin for the first time
-5. ⚠️ **Manually pair the client for now**, automatic pairing and certificate creation is not yet working properly (see the [API docs of the BSHC](https://github.com/BoschSmartHome/bosch-shc-api-docs/tree/master/postman) for instructions)
+1. Set the system password and the IP address of the BSHC via the Homebridge UI
+2. Press the pairing button
+3. Start the plugin (restart Homebridge)
+
+If you don't want to pair a new client on every plugin restart:
+
+4. Start the plugin in debug mode
+5. Copy the client cert and key
+6. Set the contents of the cert and key (only the base64 part without the `BEGIN` and `END` lines) through the plugin settings
+7. Remove the system password
+8. Restart homebridge (without debug mode)
+
+Alternatively you can generate a client certificate and key on your own (see the [API docs of the BSHC](https://github.com/BoschSmartHome/bosch-shc-api-docs/tree/master/postman) for instructions).
 
 ## Settings
 
@@ -40,13 +42,25 @@ The accessory is subscribed to events from the BSHC and will update its state au
 
 **Temperature**
 
-- Current temperature: Measured temperature changes are reflected in realtime through events from the BSHC
-- Target temperatur: Changes from outside (e.g., through the Bosch Smart Home app) are also reflected immediately
+- **Current temperature:** Measured temperature changes are reflected in realtime through events from the BSHC
+- **Target temperatur:** Changes from outside (e.g., through the Bosch Smart Home app) are also reflected immediately
+
+**Add/remove new rooms**
+
+This plugin currently does not implement automatic handling of devices that are added or removed to the BSHC. Restarting Homebridge does the trick:
+
+- **Add:** Please restart the homebridge plugin, new rooms with room climate control will be initialized automatically, while existing configuration will not be changed
+- **Remove:** Remove the device from HomeKit and restart the plugin to make sure its reference is removed from the bridge
 
 ## Credits
 
 - [bosch-smart-home-bridge](https://github.com/holomekc/bosch-smart-home-bridge) (API client)
 - [Bosch Smart Home Controller Local API](https://github.com/BoschSmartHome/bosch-shc-api-docs) (API documentation)
+
+## Todo
+
+- Persist the initially generated certificate and private key to be able to re-use it on plugin restart
+- Handle devices that are added or removed to the BSHC automatically
 
 ## Contributing
 

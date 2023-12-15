@@ -6,12 +6,6 @@
     "schema": {
         "type": "object",
         "properties": {
-            "systemPassword": {
-                "title": "System password (base64 encoded)",
-                "description": "The system password of your Bosch Smart Home Controller (BSHC)",
-                "type": "string",
-                "required": true
-            },
             "host": {
                 "title": "Host",
                 "description": "The host name / IP Address of BSHC (e.g. 192.168.0.10)",
@@ -24,6 +18,11 @@
                 "type": "string",
                 "required": true,
                 "default": "Homebridge Room Climate Control"
+            },
+            "systemPassword": {
+                "title": "System password (plain text, only needed for pairing)",
+                "description": "The system password of your Bosch Smart Home Controller (BSHC)",
+                "type": "string"
             },
             "clientId": {
                 "title": "Client identifier",
