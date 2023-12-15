@@ -22,6 +22,7 @@ echo -n 'secret' | openssl base64
 ```
 3. Set the contents of the certificate and key, the encoded system password, the IP address of the BSHC, and other configuration options as shown in [`.homebridge/config.example.json`](.homebridge/config.example.json) via the Homebridge UI (or by creating a `.homebridge/config.json` file)
 4. Press the pair button on the BSHC before starting the plugin for the first time
+5. ⚠️ **Manually pair the client for now**, automatic pairing and certificate creation is not yet working properly (see the [API docs of the BSHC](https://github.com/BoschSmartHome/bosch-shc-api-docs/tree/master/postman) for instructions)
 
 ## Settings
 
