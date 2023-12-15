@@ -45,7 +45,7 @@ The accessory is subscribed to events from the BSHC and will update its state au
 - **Current temperature:** Measured temperature changes are reflected in realtime through events from the BSHC
 - **Target temperatur:** Changes from outside (e.g., through the Bosch Smart Home app) are also reflected immediately
 
-**Add/remove new rooms**
+**Add/remove room climate control**
 
 This plugin currently does not implement automatic handling of devices that are added or removed to the BSHC. Restarting Homebridge does the trick:
 
