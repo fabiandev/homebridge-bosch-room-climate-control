@@ -62,11 +62,11 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
       .withClientCert(certificate.cert)
       .withClientPrivateKey(certificate.private)
       .withLogger({
-        fine: this.log.debug,
-        debug: this.log.debug,
-        info: this.log.info,
-        warn: this.log.warn,
-        error: this.log.error,
+        fine: this.log.debug.bind(this.log),
+        debug: this.log.debug.bind(this.log),
+        info: this.log.info.bind(this.log),
+        warn: this.log.warn.bind(this.log),
+        error: this.log.error.bind(this.log),
       })
       .build();
 
