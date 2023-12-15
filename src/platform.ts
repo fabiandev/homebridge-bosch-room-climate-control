@@ -1,4 +1,4 @@
-import { concatMap, from, map, filter } from 'rxjs';
+import { concatMap, from, map, filter, lastValueFrom } from 'rxjs';
 import { API, APIEvent, Characteristic, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service } from 'homebridge';
 import { BoschSmartHomeBridge, BoschSmartHomeBridgeBuilder, BshbResponse, BshbUtils } from 'bosch-smart-home-bridge';
 
@@ -31,9 +31,10 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
-    api.on(APIEvent.DID_FINISH_LAUNCHING, () => {
-      this.initializeBoschSmartHomeBridge();
-      this.initializeRoomClimate();
+    api.on(APIEvent.DID_FINISH_LAUNCHING, async () => {
+      await lastValueFrom(this.initializeBoschSmartHomeBridge());
+      await lastValueFrom(this.initializeRoomClimate());
+
       this.startLongPolling();
     });
 
@@ -50,7 +51,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     this.platformAccessories.push(accessory);
   }
 
-  private initializeBoschSmartHomeBridge(): void {
+  private initializeBoschSmartHomeBridge() {
     const certificate = this.config.clientCert != null ? {
       cert: '-----BEGIN CERTIFICATE-----\n' + this.config.clientCert + '\n-----END CERTIFICATE-----',
       private: '-----BEGIN RSA PRIVATE KEY-----\n' + this.config.clientKey + '\n-----END RSA PRIVATE KEY-----',
@@ -62,6 +63,8 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
       .withClientPrivateKey(certificate.private)
       .build();
 
+    this.bshb = bshb;
+
     const clientName = this.config.clientName ?? PLUGIN_NAME;
     const clientIdentifier = this.config.clientId ?? BshbUtils.generateIdentifier();
 
@@ -70,13 +73,12 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     }
 
     this.log.info('Attempting to pair with BSHC if needed...');
-    bshb.pairIfNeeded(clientName, clientIdentifier, this.config.systemPassword);
 
-    this.bshb = bshb;
+    return bshb.pairIfNeeded(clientName, clientIdentifier, this.config.systemPassword);
   }
 
-  private initializeRoomClimate(): void {
-    this.bshb
+  private initializeRoomClimate() {
+    return this.bshb
       .getBshcClient()
       .getRooms()
       .pipe(
@@ -105,8 +107,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
           this.log.info(`Identified device ${device.id} with room climate control capabilities`);
           this.log.debug(pretty(device));
           this.createAccessory(device);
-        }))
-      .subscribe();
+        }));
   }
 
   private startLongPolling(): void {
