@@ -1,8 +1,8 @@
 import { API } from 'homebridge';
 
-import { PLATFORM_NAME } from './settings';
+import { PLUGIN_NAME, PLATFORM_NAME } from './settings';
 import { BoschRoomClimateControlPlatform } from './platform';
 
 export = (api: API) => {
-  api.registerPlatform(PLATFORM_NAME, BoschRoomClimateControlPlatform);
+  api.registerPlatform(PLUGIN_NAME, PLATFORM_NAME, BoschRoomClimateControlPlatform);
 };
