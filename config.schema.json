@@ -1,7 +1,7 @@
 {
     "pluginAlias": "BoschRoomClimateControl",
     "pluginType": "platform",
-    "singular": false,
+    "singular": true,
     "headerDisplay": "Control multiple Bosch Smart Home devices through room climate control of the BSHC API",
     "schema": {
         "type": "object",
