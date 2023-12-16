@@ -390,6 +390,16 @@ export class BoschRoomClimateControlAccessory {
   private async handleTargetTemperatureSet(value: CharacteristicValue): Promise<void> {
     this.log.debug('Setting target temperature...', value);
 
+    if (this.getLocalState().deviceState === DeviceState.OFF) {
+      this.log.debug('Cannot set target temperature while room control mode is set to off');
+      return;
+    }
+
+    if (value == null) {
+      this.log.debug('No value provided for target temperature');
+      return;
+    }
+
     const deviceId = this.platformAccessory.context.device.id;
     const serviceId = BoschServiceId.RoomClimateControl;
 
