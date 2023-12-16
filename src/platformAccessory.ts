@@ -373,7 +373,7 @@ export class BoschRoomClimateControlAccessory {
             ))),
       );
     } catch (e) {
-      this.log.error('Could not updatetarget heating cooling state. This could be related to running a scene in HomeKit.', e);
+      this.log.error('Could not updatetarget heating cooling state', e);
     }
   }
 
@@ -419,7 +419,7 @@ export class BoschRoomClimateControlAccessory {
           .putState(this.getPath(deviceId, serviceId), state),
       );
     } catch (e) {
-      this.log.error('Could not update target temperature. This could be related to running a scene in HomeKit.', e);
+      this.log.error('Could not update target temperature', e);
     }
   }
 
