@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import { concatMap, from, map, filter, lastValueFrom } from 'rxjs';
 import { API, APIEvent, Characteristic, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service } from 'homebridge';
 import { BoschSmartHomeBridge, BoschSmartHomeBridgeBuilder, BshbResponse, BshbUtils } from 'bosch-smart-home-bridge';
