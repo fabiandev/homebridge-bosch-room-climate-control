@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import { concatMap, from, map, filter, lastValueFrom } from 'rxjs';
 import { API, APIEvent, Characteristic, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service } from 'homebridge';
 import { BoschSmartHomeBridge, BoschSmartHomeBridgeBuilder, BshbResponse, BshbUtils } from 'bosch-smart-home-bridge';
@@ -32,17 +33,14 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     public readonly api: API,
   ) {
     api.on(APIEvent.DID_FINISH_LAUNCHING, async () => {
-      if (this.config.clientName == null) {
-        this.log.info('A client name is required. Please configure and restart the plugin.');
-        return;
-      }
-
       if (this.config.clientCert == null && this.config.systemPassword == null) {
+        this.log.info('Plugin configuration incomplete:');
         this.log.info('Either a SSL key pair or the system password is required. Please configure and restart the plugin.');
         return;
       }
 
       if (this.config.clientCert != null && this.config.clientKey == null) {
+        this.log.info('Plugin configuration incomplete:');
         this.log.info('A private key must be provided alongside a client certificate. Please configure and restart the plugin.');
         return;
       }
@@ -89,10 +87,6 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
 
     const clientName = this.config.clientName ?? PLUGIN_NAME;
     const clientIdentifier = this.config.clientId ?? BshbUtils.generateIdentifier();
-
-    if (this.config.systemPassword == null) {
-      this.log.warn('No system password provided');
-    }
 
     this.log.info('Attempting to pair with BSHC if needed...');
 
