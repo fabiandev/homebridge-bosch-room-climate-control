@@ -16,13 +16,14 @@
                 "title": "Client name",
                 "description": "The name for the homebridge client that is shown in the Bosch Smart Home app ('OSS ' prefix is added automatically)",
                 "type": "string",
-                "required": true,
+                "required": false,
                 "default": "Homebridge Room Climate Control"
             },
             "systemPassword": {
                 "title": "System password (plain text, only needed for pairing)",
                 "description": "The system password of your Bosch Smart Home Controller (BSHC)",
-                "type": "string"
+                "type": "string",
+                "required": false
             },
             "clientId": {
                 "title": "Client identifier",
