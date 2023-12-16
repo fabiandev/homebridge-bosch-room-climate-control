@@ -32,6 +32,21 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     public readonly api: API,
   ) {
     api.on(APIEvent.DID_FINISH_LAUNCHING, async () => {
+      if (this.config.clientName == null) {
+        this.log.info('A client name is required. Please configure and restart the plugin.');
+        return;
+      }
+
+      if (this.config.clientCert == null && this.config.systemPassword == null) {
+        this.log.info('Either a SSL key pair or the system password is required. Please configure and restart the plugin.');
+        return;
+      }
+
+      if (this.config.clientCert != null && this.config.clientKey == null) {
+        this.log.info('A private key must be provided alongside a client certificate. Please configure and restart the plugin.');
+        return;
+      }
+
       await lastValueFrom(this.initializeBoschSmartHomeBridge());
       await lastValueFrom(this.initializeRoomClimate());
 
