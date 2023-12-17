@@ -1,4 +1,4 @@
-import { Observable, switchMap, from, map, filter, lastValueFrom, iif, of, concatMap, toArray } from 'rxjs';
+import { Observable, switchMap, from, map, filter, lastValueFrom, toArray } from 'rxjs';
 import { Service, PlatformAccessory, Characteristic, CharacteristicValue, Logger } from 'homebridge';
 import { BshbResponse } from 'bosch-smart-home-bridge';
 
