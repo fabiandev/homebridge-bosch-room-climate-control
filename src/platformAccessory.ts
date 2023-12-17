@@ -390,20 +390,24 @@ export class BoschRoomClimateControlAccessory {
           throw new Error('Unknown target heating cooling state');
       }
 
-      // TODO: fix empty requests
-      await lastValueFrom(
-        this.platform.bshb
+      if (roomControlModeState['roomControlMode'] != null) {
+        this.log.debug('Setting room control mode...', roomControlModeState['roomControlMode']);
+
+        await lastValueFrom(
+          this.platform.bshb
+            .getBshcClient()
+            .putState(this.getPath(deviceId, serviceId), roomControlModeState),
+        );
+      }
+
+      if (operationModeState['operationMode'] != null) {
+        this.log.debug('Setting operation mode...', operationModeState['operationMode']);
+
+        await lastValueFrom(this.platform.bshb
           .getBshcClient()
-          .putState(this.getPath(deviceId, serviceId), roomControlModeState)
-          .pipe(
-            concatMap(response => iif(
-              () => operationModeState['operationMode'] != null,
-              this.platform.bshb
-                .getBshcClient()
-                .putState(this.getPath(deviceId, serviceId), operationModeState),
-              of(response),
-            ))),
-      );
+          .putState(this.getPath(deviceId, serviceId), operationModeState),
+        );
+      }
     });
   }
 
