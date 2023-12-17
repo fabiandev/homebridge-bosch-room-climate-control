@@ -360,49 +360,51 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async handleTargetHeatingCoolingStateSet(value: CharacteristicValue): Promise<void> {
-    this.log.debug('Setting target heating cooling state...', value);
+    await this.platform.queue.add(async () => {
+      this.log.debug('Setting target heating cooling state...', value);
 
-    const deviceId = this.platformAccessory.context.device.id;
-    const serviceId = BoschServiceId.RoomClimateControl;
+      const deviceId = this.platformAccessory.context.device.id;
+      const serviceId = BoschServiceId.RoomClimateControl;
 
-    const roomControlModeState = {
-      '@type': 'climateControlState',
-    };
+      const roomControlModeState = {
+        '@type': 'climateControlState',
+      };
 
-    const operationModeState = {
-      '@type': 'climateControlState',
-    };
+      const operationModeState = {
+        '@type': 'climateControlState',
+      };
 
-    switch(value) {
-      case this.platform.Characteristic.TargetHeatingCoolingState.AUTO:
-        operationModeState['operationMode'] = BoschOperationMode.AUTOMATIC;
-        roomControlModeState['roomControlMode'] = BoschRoomControlMode.HEATING;
-        break;
-      case this.platform.Characteristic.TargetHeatingCoolingState.HEAT:
-        operationModeState['operationMode'] = BoschOperationMode.MANUAL;
-        roomControlModeState['roomControlMode'] = BoschRoomControlMode.HEATING;
-        break;
-      case this.platform.Characteristic.TargetHeatingCoolingState.OFF:
-        roomControlModeState['roomControlMode'] = BoschRoomControlMode.OFF;
-        break;
-      default:
-        throw new Error('Unknown target heating cooling state');
-    }
+      switch(value) {
+        case this.platform.Characteristic.TargetHeatingCoolingState.AUTO:
+          operationModeState['operationMode'] = BoschOperationMode.AUTOMATIC;
+          roomControlModeState['roomControlMode'] = BoschRoomControlMode.HEATING;
+          break;
+        case this.platform.Characteristic.TargetHeatingCoolingState.HEAT:
+          operationModeState['operationMode'] = BoschOperationMode.MANUAL;
+          roomControlModeState['roomControlMode'] = BoschRoomControlMode.HEATING;
+          break;
+        case this.platform.Characteristic.TargetHeatingCoolingState.OFF:
+          roomControlModeState['roomControlMode'] = BoschRoomControlMode.OFF;
+          break;
+        default:
+          throw new Error('Unknown target heating cooling state');
+      }
 
-    // TODO: fix empty requests
-    await lastValueFrom(
-      this.platform.bshb
-        .getBshcClient()
-        .putState(this.getPath(deviceId, serviceId), roomControlModeState)
-        .pipe(
-          concatMap(response => iif(
-            () => operationModeState['operationMode'] != null,
-            this.platform.bshb
-              .getBshcClient()
-              .putState(this.getPath(deviceId, serviceId), operationModeState),
-            of(response),
-          ))),
-    );
+      // TODO: fix empty requests
+      await lastValueFrom(
+        this.platform.bshb
+          .getBshcClient()
+          .putState(this.getPath(deviceId, serviceId), roomControlModeState)
+          .pipe(
+            concatMap(response => iif(
+              () => operationModeState['operationMode'] != null,
+              this.platform.bshb
+                .getBshcClient()
+                .putState(this.getPath(deviceId, serviceId), operationModeState),
+              of(response),
+            ))),
+      );
+    });
   }
 
   private async handleCurrentTemperatureGet(): Promise<number> {
@@ -420,31 +422,33 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async handleTargetTemperatureSet(value: CharacteristicValue): Promise<void> {
-    this.log.debug('Setting target temperature...', value);
+    await this.platform.queue.add(async () => {
+      this.log.debug('Setting target temperature...', value);
 
-    if (this.getLocalState().deviceState === DeviceState.OFF) {
-      this.log.debug('Cannot set target temperature while room control mode is set to off');
-      return;
-    }
+      if (this.getLocalState().deviceState === DeviceState.OFF) {
+        this.log.debug('Cannot set target temperature while room control mode is set to off');
+        return;
+      }
 
-    if (value == null) {
-      this.log.debug('No value provided for target temperature');
-      return;
-    }
+      if (value == null) {
+        this.log.debug('No value provided for target temperature');
+        return;
+      }
 
-    const deviceId = this.platformAccessory.context.device.id;
-    const serviceId = BoschServiceId.RoomClimateControl;
+      const deviceId = this.platformAccessory.context.device.id;
+      const serviceId = BoschServiceId.RoomClimateControl;
 
-    const state: Partial<BoschClimateControlState> = {
-      '@type': 'climateControlState',
-      setpointTemperature: Number(value),
-    };
+      const state: Partial<BoschClimateControlState> = {
+        '@type': 'climateControlState',
+        setpointTemperature: Number(value),
+      };
 
-    await lastValueFrom(
-      this.platform.bshb
-        .getBshcClient()
-        .putState(this.getPath(deviceId, serviceId), state),
-    );
+      await lastValueFrom(
+        this.platform.bshb
+          .getBshcClient()
+          .putState(this.getPath(deviceId, serviceId), state),
+      );
+    });
   }
 
   private async handleTemperatureDisplayUnitsGet(): Promise<number> {

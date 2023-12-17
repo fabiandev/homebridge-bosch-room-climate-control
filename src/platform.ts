@@ -1,6 +1,7 @@
 import { concatMap, from, map, filter, lastValueFrom } from 'rxjs';
 import { API, APIEvent, Characteristic, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service } from 'homebridge';
 import { BoschSmartHomeBridge, BoschSmartHomeBridgeBuilder, BshbResponse, BshbUtils } from 'bosch-smart-home-bridge';
+import PQueue from 'p-queue';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { pretty } from './utils';
@@ -17,6 +18,8 @@ import {
 export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service = this.api.hap.Service;
   public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
+
+  public readonly queue = new PQueue({concurrency: 1, timeout: 5_000});
 
   public bshb!: BoschSmartHomeBridge;
 
