@@ -1,4 +1,4 @@
-import { Observable, switchMap, from, map, filter, lastValueFrom, iif, of, concatMap } from 'rxjs';
+import { Observable, switchMap, from, map, filter, lastValueFrom, iif, of, concatMap, toArray } from 'rxjs';
 import { Service, PlatformAccessory, Characteristic, CharacteristicValue, Logger } from 'homebridge';
 import { BshbResponse } from 'bosch-smart-home-bridge';
 
@@ -110,8 +110,38 @@ export class BoschRoomClimateControlAccessory {
     };
   }
 
-  private async initializeState(): Promise<AccessoryState> {
-    return lastValueFrom(this.updateLocalState());
+  private async initializeState(): Promise<void> {
+    const services = await lastValueFrom(this.updateLocalState());
+
+    this.log.debug('Checking services returned from periodic state update...');
+    this.log.debug(pretty(services));
+
+    const roomClimateControlService = services.find(service => service.id === BoschServiceId.RoomClimateControl);
+    const temperatureLevelService = services.find(service => service.id === BoschServiceId.TemperatureLevel);
+
+    if (roomClimateControlService == null) {
+      this.log.warn('No room climate control service found, setting related characteristics to unavailable');
+
+      this.service.updateCharacteristic(
+        this.platform.Characteristic.CurrentHeatingCoolingState, new Error('Current heating state unavailable'),
+      );
+
+      this.service.updateCharacteristic(
+        this.platform.Characteristic.TargetHeatingCoolingState, new Error('Target heating state unavailable'),
+      );
+
+      this.service.updateCharacteristic(
+        this.platform.Characteristic.TargetTemperature, new Error('Target temperature unavailable'),
+      );
+    }
+
+    if (temperatureLevelService == null) {
+      this.log.warn('No room climate control service found, setting related characteristic to unavailable');
+
+      this.service.updateCharacteristic(
+        this.platform.Characteristic.CurrentTemperature, new Error('Current temperature unavailable'),
+      );
+    }
   }
 
   private async startPeriodicUpdates(): Promise<void> {
@@ -211,7 +241,7 @@ export class BoschRoomClimateControlAccessory {
     return false;
   }
 
-  private updateLocalState(): Observable<AccessoryState> {
+  private updateLocalState(): Observable<BoschDeviceServiceData[]> {
     return this.platform.bshb.getBshcClient().getDeviceServices(this.platformAccessory.context.device.id, 'all')
       .pipe(
         switchMap((response: BshbResponse<BoschDeviceServiceData[]>) => {
@@ -225,8 +255,9 @@ export class BoschRoomClimateControlAccessory {
         || deviceServiceData.id === BoschServiceId.TemperatureLevel;
         }), map(deviceServiceData => {
           this.setLocalStateFromDeviceServiceData(deviceServiceData);
-          return this.getLocalState();
+          return deviceServiceData;
         }),
+        toArray(),
       );
   }
 

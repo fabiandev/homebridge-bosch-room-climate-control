@@ -47,7 +47,7 @@
                 "title": "Refresh all accessories after specified amount of minutes (0 or lower = disabled)",
                 "description": "The plugin reacts to changes of accessories, a periodic refresh is not required and does not disable event based updates through long polling",
                 "type": "number",
-                "default": -1,
+                "default": 5,
                 "required": false
             }
         }
