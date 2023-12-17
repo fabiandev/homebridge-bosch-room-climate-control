@@ -358,23 +358,20 @@ export class BoschRoomClimateControlAccessory {
         throw new Error('Unknown target heating cooling state');
     }
 
-    try {
-      await lastValueFrom(
-        this.platform.bshb
-          .getBshcClient()
-          .putState(this.getPath(deviceId, serviceId), roomControlModeState)
-          .pipe(
-            concatMap(response => iif(
-              () => operationModeState['operationMode'] != null,
-              this.platform.bshb
-                .getBshcClient()
-                .putState(this.getPath(deviceId, serviceId), operationModeState),
-              of(response),
-            ))),
-      );
-    } catch (e) {
-      this.log.error('Could not updatetarget heating cooling state', e);
-    }
+    // TODO: fix empty requests
+    await lastValueFrom(
+      this.platform.bshb
+        .getBshcClient()
+        .putState(this.getPath(deviceId, serviceId), roomControlModeState)
+        .pipe(
+          concatMap(response => iif(
+            () => operationModeState['operationMode'] != null,
+            this.platform.bshb
+              .getBshcClient()
+              .putState(this.getPath(deviceId, serviceId), operationModeState),
+            of(response),
+          ))),
+    );
   }
 
   private async handleCurrentTemperatureGet(): Promise<number> {
@@ -412,15 +409,11 @@ export class BoschRoomClimateControlAccessory {
       setpointTemperature: Number(value),
     };
 
-    try {
-      await lastValueFrom(
-        this.platform.bshb
-          .getBshcClient()
-          .putState(this.getPath(deviceId, serviceId), state),
-      );
-    } catch (e) {
-      this.log.error('Could not update target temperature', e);
-    }
+    await lastValueFrom(
+      this.platform.bshb
+        .getBshcClient()
+        .putState(this.getPath(deviceId, serviceId), state),
+    );
   }
 
   private async handleTemperatureDisplayUnitsGet(): Promise<number> {
