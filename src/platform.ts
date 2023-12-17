@@ -92,6 +92,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
 
     this.log.info('Attempting to pair with BSHC if needed...');
 
+    // TODO: set key pair
     this.log.debug('CONFIG PATH');
     this.log.debug(this.api.user.configPath());
 
