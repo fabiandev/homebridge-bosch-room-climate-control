@@ -3,7 +3,7 @@
         {
             "name": "homebridge-bosch-room-climate-control",
             "platform": "BoschRoomClimateControl",
-            "systemPassword": "c2VjcmV0",
+            "systemPassword": "secret",
             "host": "192.168.0.10",
             "clientName": "Homebridge Room Climate Control",
             "clientId": "homebridge-bosch-room-climate-control",

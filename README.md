@@ -16,16 +16,6 @@ The official and built-in HomeKit integration for Bosch Smart Home thermostats i
 2. Press the pairing button
 3. Start the plugin (restart Homebridge)
 
-If you don't want to pair a new client on every plugin restart:
-
-4. Start the plugin in debug mode
-5. Copy the client cert and key
-6. Set the contents of the cert and key (only the base64 part without the `BEGIN` and `END` lines) through the plugin settings
-7. Remove the system password
-8. Restart homebridge (without debug mode)
-
-Alternatively you can generate a client certificate and key on your own (see the [API docs of the BSHC](https://github.com/BoschSmartHome/bosch-shc-api-docs/tree/master/postman) for instructions).
-
 ## Settings
 
 See [`config.schema.json`](config.schema.json)

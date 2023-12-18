@@ -97,7 +97,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
 
     this.log.info('Attempting to pair with BSHC if needed...');
 
-    this.updateConfig({certificate, clientId: this.config.clientId});
+    this.updateConfig({certificate, clientId: clientIdentifier});
 
     await lastValueFrom(
       bshb.pairIfNeeded(clientName, clientIdentifier, this.config.systemPassword),
@@ -178,7 +178,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     }
 
     if (!this.isClientIdConfigured()) {
-      configJson.platforms[platformId].clientid = config.clientId;
+      configJson.platforms[platformId].clientId = config.clientId;
     }
 
     try {
