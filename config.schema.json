@@ -12,34 +12,9 @@
                 "type": "string",
                 "required": true
             },
-            "clientName": {
-                "title": "Client name",
-                "description": "The name for the homebridge client that is shown in the Bosch Smart Home app ('OSS ' prefix is added automatically)",
-                "type": "string",
-                "required": false,
-                "default": "Homebridge Room Climate Control"
-            },
             "systemPassword": {
                 "title": "System password (plain text, only needed for pairing)",
                 "description": "The system password of your Bosch Smart Home Controller (BSHC)",
-                "type": "string",
-                "required": false
-            },
-            "clientId": {
-                "title": "Client identifier",
-                "description": "Generated automatically if not provided ('oss_' prefix is added automatically)",
-                "type": "string",
-                "required": false
-            },
-            "clientCert": {
-                "title": "Client certificate (base64 encoded content only without BEGIN/END)",
-                "description": "Generated automatically if possoble, unless provided here",
-                "type": "string",
-                "required": false
-            },
-            "clientKey": {
-                "title": "Client private key (base64 encoded content only without BEGIN/END, 2048bit)",
-                "description": "Generated automatically if possible, unless provided here",
                 "type": "string",
                 "required": false
             },
@@ -55,6 +30,30 @@
                 "description": "Fetch devices and handle removed and added devices. Without this being enabled, the plugin needs to be restarted to update accessories from the API.",
                 "type": "number",
                 "default": 15,
+                "required": false
+            },
+            "clientName": {
+                "title": "Client name (leave empty to use plugin name)",
+                "description": "The name for the homebridge client that is shown in the Bosch Smart Home app ('OSS ' prefix is added automatically)",
+                "type": "string",
+                "required": false
+            },
+            "clientId": {
+                "title": "Client identifier (leave empty for auto-generation)",
+                "description": "Generated automatically if not provided ('oss_' prefix is added automatically)",
+                "type": "string",
+                "required": false
+            },
+            "clientCert": {
+                "title": "Client certificate (leave empty for auto-generation)",
+                "description": "base64 encoded content only without BEGIN/END",
+                "type": "string",
+                "required": false
+            },
+            "clientKey": {
+                "title": "Client private key (leave empty for auto-generation)",
+                "description": "base64 encoded content only without BEGIN/END, 2048bit",
+                "type": "string",
                 "required": false
             }
         }
