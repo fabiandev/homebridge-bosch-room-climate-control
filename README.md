@@ -47,10 +47,7 @@ The accessory is subscribed to events from the BSHC and will update its state au
 
 **Add/remove room climate control**
 
-This plugin currently does not implement automatic handling of devices that are added or removed to the BSHC. Restarting Homebridge does the trick:
-
-- **Add:** Please restart the homebridge plugin, new rooms with room climate control will be initialized automatically, while existing configuration will not be changed
-- **Remove:** Remove the device from HomeKit and restart the plugin to make sure its reference is removed from the bridge
+Devices are periodically checked (see config) and removed or added automatically.
 
 **Scenes and automations**
 
@@ -58,11 +55,6 @@ In case you want to configure scenes or automations that switch between the ther
 
 - This will make sure that the scene detects the correct state, ashe BSHC will apply your scheduled temperature changes and the scene will show as inactive/active unexpectedly
 - This will prevent unexpected behavior, as the target temperature cannot be set on Bosch thermostats that are turned off, but the automation will try to apply it
-
-## To Do
-
-- Persist the initially generated certificate and private key to be able to re-use it on plugin restart
-- Handle devices that are added or removed to the BSHC automatically
 
 ## Credits
 

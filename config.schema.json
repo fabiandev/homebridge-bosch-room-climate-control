@@ -44,10 +44,17 @@
                 "required": false
             },
             "periodicUpdates": {
-                "title": "Refresh all accessories after specified amount of minutes (0 or lower = disabled)",
+                "title": "Refresh the accessory state after a specified amount of minutes (0 or lower = disabled)",
                 "description": "The plugin reacts to changes of accessories, a periodic refresh is not required and does not disable event based updates through long polling",
                 "type": "number",
                 "default": 5,
+                "required": false
+            },
+            "accessoryUpdates": {
+                "title": "Fetch devices and handle removed and added devices",
+                "description": "Fetch devices and handle removed and added devices. Without this being enabled, the plugin needs to be restarted to update accessories from the API.",
+                "type": "number",
+                "default": 15,
                 "required": false
             }
         }

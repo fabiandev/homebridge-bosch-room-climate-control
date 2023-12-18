@@ -14,6 +14,7 @@ import {
   BoschOperationMode,
   BoschRoomControlMode,
   BoschTemperatureLevelState,
+  BoschDevice,
 } from './types';
 
 export enum DeviceState {
@@ -23,6 +24,7 @@ export enum DeviceState {
 }
 
 export type AccessoryState = {
+  available: boolean;
   currentTemperature: number;
   targetTemperature: number;
   deviceState: DeviceState;
@@ -43,6 +45,7 @@ export class BoschRoomClimateControlAccessory {
   private timeoutId!: NodeJS.Timeout;
 
   private state: AccessoryState = {
+    available: true,
     currentTemperature: 0,
     targetTemperature: 5,
     deviceState: DeviceState.OFF,
@@ -80,8 +83,20 @@ export class BoschRoomClimateControlAccessory {
     return `devices/${deviceId}/services/${serviceId}`;
   }
 
+  public getDevice(): BoschDevice {
+    return this.platformAccessory.context.device;
+  }
+
   public getLocalState(): AccessoryState {
     return { ...this.state };
+  }
+
+  public setUnavailable() {
+    this.state.available = false;
+
+    this.service.updateCharacteristic(
+      this.platform.Characteristic.CurrentHeatingCoolingState, new Error('Current state unavailable'),
+    );
   }
 
   public handleDeviceServiceDataUpdate(deviceServiceData: BoschDeviceServiceData): void {
@@ -111,40 +126,17 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async initializeState(): Promise<void> {
-    const services = await lastValueFrom(this.updateLocalState());
-
-    this.log.debug('Checking services returned from periodic state update...');
-    this.log.debug(pretty(services));
-
-    const roomClimateControlService = services.find(service => service.id === BoschServiceId.RoomClimateControl);
-    const temperatureLevelService = services.find(service => service.id === BoschServiceId.TemperatureLevel);
-
-    if (roomClimateControlService == null) {
-      this.log.warn('No room climate control service found, setting related characteristics to unavailable');
-
-      this.service.updateCharacteristic(
-        this.platform.Characteristic.CurrentHeatingCoolingState, new Error('Current heating state unavailable'),
-      );
-
-      this.service.updateCharacteristic(
-        this.platform.Characteristic.TargetHeatingCoolingState, new Error('Target heating state unavailable'),
-      );
-
-      this.service.updateCharacteristic(
-        this.platform.Characteristic.TargetTemperature, new Error('Target temperature unavailable'),
-      );
-    }
-
-    if (temperatureLevelService == null) {
-      this.log.warn('No room climate control service found, setting related characteristic to unavailable');
-
-      this.service.updateCharacteristic(
-        this.platform.Characteristic.CurrentTemperature, new Error('Current temperature unavailable'),
-      );
-    }
+    return this.platform.queue.add(async () => {
+      try {
+        await lastValueFrom(this.updateLocalState());
+      } catch(e) {
+        this.log.error('Could not update state, setting accessory to unavailable...', e);
+        this.setUnavailable();
+      }
+    });
   }
 
-  private async startPeriodicUpdates(): Promise<void> {
+  private startPeriodicUpdates(): void {
     const minutes = this.platform.config.periodicUpdates;
 
     if (minutes == null || minutes < 1) {
@@ -262,6 +254,8 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private setLocalStateFromDeviceServiceData(deviceServiceData: BoschDeviceServiceData): void {
+    this.state.available = true;
+
     this.log.debug('Attempting to set local state from device service data...');
 
     if (this.isRoomClimateControlService(deviceServiceData)) {
@@ -346,6 +340,10 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async handleCurrentHeatingCoolingStateGet(): Promise<keyof SupportedCurrentHeatingCoolingState> {
+    if (!this.state.available) {
+      throw new Error('Device not available');
+    }
+
     this.log.debug('Getting current heating cooling state...');
 
     const state = this.getLocalState();
@@ -353,6 +351,10 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async handleTargetHeatingCoolingStateGet(): Promise<keyof SupportedTargetHeatingCoolingState> {
+    if (!this.state.available) {
+      throw new Error('Device not available');
+    }
+
     this.log.debug('Getting target heating cooling state...');
 
     const state = this.getLocalState();
@@ -360,6 +362,10 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async handleTargetHeatingCoolingStateSet(value: CharacteristicValue): Promise<void> {
+    if (!this.state.available) {
+      throw new Error('Device not available');
+    }
+
     await this.platform.queue.add(async () => {
       this.log.debug('Setting target heating cooling state...', value);
 
@@ -412,6 +418,10 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async handleCurrentTemperatureGet(): Promise<number> {
+    if (!this.state.available) {
+      throw new Error('Device not available');
+    }
+
     this.log.debug('Getting current temperature...');
 
     const state = this.getLocalState();
@@ -419,6 +429,10 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async handleTargetTemperatureGet(): Promise<number> {
+    if (!this.state.available) {
+      throw new Error('Device not available');
+    }
+
     this.log.debug('Getting target temperature...');
 
     const state = this.getLocalState();
@@ -426,6 +440,10 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async handleTargetTemperatureSet(value: CharacteristicValue): Promise<void> {
+    if (!this.state.available) {
+      throw new Error('Device not available');
+    }
+
     await this.platform.queue.add(async () => {
       this.log.debug('Setting target temperature...', value);
 
@@ -456,11 +474,19 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async handleTemperatureDisplayUnitsGet(): Promise<number> {
+    if (!this.state.available) {
+      throw new Error('Device not available');
+    }
+
     this.log.debug('Getting temperature display unit...');
     return this.platform.Characteristic.TemperatureDisplayUnits.CELSIUS;
   }
 
   private async handleTemperatureDisplayUnitsSet(value: CharacteristicValue): Promise<void> {
+    if (!this.state.available) {
+      throw new Error('Device not available');
+    }
+
     this.log.debug('Setting temperatur edisplay unit...', value);
   }
 }
