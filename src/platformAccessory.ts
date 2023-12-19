@@ -76,7 +76,7 @@ export class BoschRoomClimateControlAccessory {
 
   public dispose() {
     this.log.info('Disposing accessory...');
-    this.stopPeriodicUpdates();
+    this.stopPeriodicStateUpdates();
   }
 
   public getPath(deviceId: string, serviceId: BoschServiceId): string {
@@ -136,10 +136,10 @@ export class BoschRoomClimateControlAccessory {
     });
   }
 
-  private startPeriodicUpdates(): void {
+  private startPeriodicStateUpdates(): void {
     this.log.info('Attempting to enable periodic state updates...');
 
-    const minutes = this.platform.config.periodicUpdates;
+    const minutes = this.platform.config.stateUpdates;
 
     if (minutes == null || minutes < 1) {
       this.log.info('Periodic updates are disabled');
@@ -155,11 +155,11 @@ export class BoschRoomClimateControlAccessory {
         this.log.warn(`Could not update state during periodic update, retrying during next cycle in ${minutes} minutes`, e);
       }
 
-      this.startPeriodicUpdates();
+      this.startPeriodicStateUpdates();
     }, minutes * 60 * 1000);
   }
 
-  private stopPeriodicUpdates(): void {
+  private stopPeriodicStateUpdates(): void {
     if (this.timeoutId == null) {
       return;
     }
@@ -173,7 +173,7 @@ export class BoschRoomClimateControlAccessory {
 
     await this.initializeState();
 
-    this.startPeriodicUpdates();
+    this.startPeriodicStateUpdates();
 
     this.log.info('Registering characteristic handlers...');
 

@@ -54,12 +54,12 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
       await this.updateAccessories();
 
       this.startLongPolling();
-      this.startAccessoryUpdates();
+      this.startPeriodicAccessoryUpdates();
     });
 
     api.on(APIEvent.SHUTDOWN, () => {
       this.stopLongPolling();
-      this.stopAccessoryUpdates();
+      this.stopPeriodicAccessoryUpdates();
 
       this.controllers.forEach(accessory => {
         accessory.dispose();
@@ -221,7 +221,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     }
   }
 
-  private startAccessoryUpdates(): void {
+  private startPeriodicAccessoryUpdates(): void {
     const minutes = this.config.accessoryUpdates;
 
     if (minutes == null || minutes < 1) {
@@ -240,11 +240,11 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
         this.log.warn(`Could not update accessories, retrying during next cycle in ${minutes} minutes`, e);
       }
 
-      this.startAccessoryUpdates();
+      this.startPeriodicAccessoryUpdates();
     }, minutes * 60 * 1000);
   }
 
-  private stopAccessoryUpdates(): void {
+  private stopPeriodicAccessoryUpdates(): void {
     if (this.timeoutId == null) {
       return;
     }
