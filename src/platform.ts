@@ -296,7 +296,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   }
 
   private startLongPolling(): void {
-    this.log.info('Attempting to start long polling...');
+    this.log.info('Starting long polling...');
 
     if(this.longPollingId != null) {
       this.log.info(`Long polling has already been started with ID ${this.longPollingId}`);
