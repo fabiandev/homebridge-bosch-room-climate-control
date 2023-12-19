@@ -75,8 +75,8 @@ export class BoschRoomClimateControlAccessory {
   }
 
   public dispose() {
-    this.log.debug('Disposing accessory...');
-    this.cancelPeriodicUpdates();
+    this.log.info('Disposing accessory...');
+    this.stopPeriodicUpdates();
   }
 
   public getPath(deviceId: string, serviceId: BoschServiceId): string {
@@ -130,45 +130,52 @@ export class BoschRoomClimateControlAccessory {
       try {
         await lastValueFrom(this.updateLocalState());
       } catch(e) {
-        this.log.error('Could not update state, setting accessory to unavailable...', e);
+        this.log.warn('Could not fetch device state, setting accessory to unavailable...', e);
         this.setUnavailable();
       }
     });
   }
 
   private startPeriodicUpdates(): void {
+    this.log.info('Attempting to enable periodic state updates...');
+
     const minutes = this.platform.config.periodicUpdates;
 
     if (minutes == null || minutes < 1) {
-      this.log.debug('Periodic updates are disabled');
+      this.log.info('Periodic updates are disabled');
       return;
     }
 
     this.timeoutId = setTimeout(async () => {
-      this.log.debug('Running periodic update...');
+      this.log.info('Running periodic state update...');
 
-      await this.initializeState();
+      try {
+        await this.initializeState();
+      } catch(e) {
+        this.log.warn(`Could not update state during periodic update, retrying during next cycle in ${minutes} minutes`, e);
+      }
+
       this.startPeriodicUpdates();
     }, minutes * 60 * 1000);
   }
 
-  private cancelPeriodicUpdates(): void {
+  private stopPeriodicUpdates(): void {
     if (this.timeoutId == null) {
       return;
     }
 
-    this.log.debug('Stopping periodic updates...');
+    this.log.info('Stopping periodic state updates...');
     clearTimeout(this.timeoutId);
   }
 
   private async registerHandlers(): Promise<void> {
-    this.log.debug('Initializing state...');
+    this.log.info('Initializing accessory...');
+
     await this.initializeState();
 
-    this.log.debug('Attempting to start periodic updates');
     this.startPeriodicUpdates();
 
-    this.log.debug('Registering characteristic handlers...');
+    this.log.info('Registering characteristic handlers...');
 
     this.service.getCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState)
       .onGet(this.handleCurrentHeatingCoolingStateGet.bind(this))

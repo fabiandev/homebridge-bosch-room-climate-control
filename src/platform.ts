@@ -72,6 +72,8 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   }
 
   private async initializeBoschSmartHomeBridge() {
+    this.log.info('Initializing Bosch Smart Home bridge...');
+
     const certificate = this.isClientCertConfigured() ? {
       cert: '-----BEGIN CERTIFICATE-----\r\n' + this.config.clientCert + '\r\n-----END CERTIFICATE-----\r\n',
       private: '-----BEGIN RSA PRIVATE KEY-----\r\n' + this.config.clientKey + '\r\n-----END RSA PRIVATE KEY-----\r\n',
@@ -93,14 +95,18 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     this.bshb = bshb;
 
     const clientName = this.config.clientName ?? PLUGIN_NAME;
-    const clientIdentifier = this.config.clientId ?? BshbUtils.generateIdentifier();
+    const clientId = this.config.clientId ?? BshbUtils.generateIdentifier();
 
     this.log.info('Attempting to pair with BSHC if needed...');
 
-    this.updateConfig({certificate, clientId: clientIdentifier});
+    this.updateConfig({
+      certificate,
+      clientId,
+      clientName,
+    });
 
     await lastValueFrom(
-      bshb.pairIfNeeded(clientName, clientIdentifier, this.config.systemPassword),
+      bshb.pairIfNeeded(clientName, clientId, this.config.systemPassword),
     );
   }
 
@@ -128,12 +134,24 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     return false;
   }
 
-  private updateConfig(config: {certificate: {cert: string; private: string}; clientId: string}): void {
-    if (this.isClientCertConfigured() && this.isClientIdConfigured()) {
+  private isClientNameConfigured(): boolean {
+    if (this.config.clientName == null) {
+      return false;
+    }
+
+    if (typeof this.config.clientName === 'string' && this.config.clientName.trim().length > 0) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private updateConfig(config: {certificate: {cert: string; private: string}; clientId: string; clientName: string}): void {
+    if (this.isClientCertConfigured() && this.isClientIdConfigured() && this.isClientNameConfigured()) {
       return;
     }
 
-    this.log.info('Attempting to update platform config with key pair...');
+    this.log.info('Attempting to update platform config...');
 
     const configPath = this.api.user.configPath();
 
@@ -146,7 +164,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     }
 
     if (configString == null) {
-      this.log.debug('Config file is empty');
+      this.log.info('Cannot update config in empty file');
       return;
     }
 
@@ -157,13 +175,13 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     });
 
     if (platformId == null) {
-      this.log.debug(`No platform ${this.log.debug('Config file is empty')} found in config`);
+      this.log.info(`No platform ${this.log.debug('Config file is empty')} found in config`);
       return;
     }
 
-    this.log.info('Updating platform config with key pair...');
-
     if (!this.isClientCertConfigured()) {
+      this.log.info('Updating platform config with key pair...');
+
       configJson.platforms[platformId].clientCert = config.certificate.cert
         .replace('-----BEGIN CERTIFICATE-----', '')
         .replace('-----END CERTIFICATE-----', '')
@@ -178,13 +196,20 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     }
 
     if (!this.isClientIdConfigured()) {
+      this.log.info('Updating platform config with clientId...');
+
       configJson.platforms[platformId].clientId = config.clientId;
+    }
+
+    if (!this.isClientNameConfigured()) {
+      this.log.info('Updating platform config with clientName...');
+      configJson.platforms[platformId].clientName = config.clientName;
     }
 
     try {
       fs.writeFileSync(configPath, JSON.stringify(configJson, null, 2));
     } catch(e) {
-      this.log.info('Could not update config file');
+      this.log.warn('Could not update config file', e);
     }
   }
 
@@ -200,14 +225,21 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     const minutes = this.config.accessoryUpdates;
 
     if (minutes == null || minutes < 1) {
-      this.log.debug('Accessory updates are disabled');
+      this.log.info('Periodic accessory updates are disabled');
       return;
     }
 
-    this.timeoutId = setTimeout(async () => {
-      this.log.debug('Running accessory updates...');
+    this.log.info('Starting periodic accessory updates...');
 
-      await this.updateAccessories();
+    this.timeoutId = setTimeout(async () => {
+      this.log.info('Running periodic accessory updates...');
+
+      try {
+        await this.updateAccessories();
+      } catch(e) {
+        this.log.warn(`Could not update accessories, retrying during next cycle in ${minutes} minutes`, e);
+      }
+
       this.startAccessoryUpdates();
     }, minutes * 60 * 1000);
   }
@@ -217,12 +249,12 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
       return;
     }
 
-    this.log.debug('Stopping accessory updates...');
+    this.log.info('Stopping periodic accessory updates...');
     clearTimeout(this.timeoutId);
   }
 
   private getDevices() {
-    this.log.debug('Initializing room climate devices...');
+    this.log.info('Initializing room climate devices...');
 
     return this.bshb
       .getBshcClient()
@@ -242,7 +274,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   }
 
   private async updateAccessories() {
-    this.log.debug('Updating accessorues...');
+    this.log.info('Updating accessories...');
 
     const devices = await this.queue.add(async () => lastValueFrom(this.getDevices()));
 
@@ -264,10 +296,10 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   }
 
   private startLongPolling(): void {
-    this.log.debug('Attempting to start long polling...');
+    this.log.info('Attempting to start long polling...');
 
     if(this.longPollingId != null) {
-      this.log.debug(`Long polling has already been started with ID ${this.longPollingId}`);
+      this.log.info(`Long polling has already been started with ID ${this.longPollingId}`);
       return;
     }
 
@@ -278,7 +310,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
         this.longPollingId = response.parsedResponse.result;
 
         if (this.longPollingId == null) {
-          this.log.info('Could not start long polling');
+          this.log.info('Could not start long polling, no ID returned from API');
           return;
         }
 
@@ -307,12 +339,12 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   }
 
   private stopLongPolling(): void {
+    this.log.info('Attempting to stop long polling...');
+
     if (this.longPollingId == null) {
-      this.log.debug('Cannot stop long polling without an ID');
+      this.log.info('Cannot stop long polling without an ID');
       return;
     }
-
-    this.log.debug('Attempting to stop long polling...');
 
     const longPollingId = this.longPollingId;
     this.longPollingId = null;
@@ -344,7 +376,13 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     const uuid = this.api.hap.uuid.generate(device.serial);
     const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);
 
-    const room = (await lastValueFrom<BshbResponse<BoschRoom>>(this.bshb.getBshcClient().getRoom(device.roomId))).parsedResponse;
+    let room: BoschRoom;
+    try {
+      room = (await lastValueFrom<BshbResponse<BoschRoom>>(this.bshb.getBshcClient().getRoom(device.roomId))).parsedResponse;
+    } catch(e) {
+      this.log.warn(`cannot add accessory for device ID ${device.id}, failed to fetch room`);
+      return;
+    }
 
     if (existingAccessory) {
       this.log.info(`Restoring accessory for device ID ${device.id} from cache...`);
@@ -372,10 +410,12 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   }
 
   private async removeAccessory(uuid: string) {
+    this.log.info(`Attempting to remove accesspry with UUID ${uuid}...`);
+
     const accessory = this.accessories.find(accessory => accessory.UUID === uuid);
 
     if (accessory == null) {
-      this.log.debug(`Could not find accessory accessory UUID ${uuid} to remove`);
+      this.log.info(`Could not find accessory accessory UUID ${uuid} to remove`);
       return;
     }
 
