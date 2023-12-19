@@ -30,12 +30,12 @@ export type AccessoryState = {
   deviceState: DeviceState;
 };
 
-type SupportedCurrentHeatingCoolingState = {
+type SupportedCurrentHeatingCoolingStates = {
   [Characteristic.CurrentHeatingCoolingState.HEAT]: typeof Characteristic.CurrentHeatingCoolingState.HEAT;
   [Characteristic.CurrentHeatingCoolingState.OFF]: typeof Characteristic.CurrentHeatingCoolingState.OFF;
 };
 
-type SupportedTargetHeatingCoolingState = {
+type SupportedTargetHeatingCoolingStates = {
   [Characteristic.TargetHeatingCoolingState.AUTO]: typeof Characteristic.TargetHeatingCoolingState.AUTO;
   [Characteristic.TargetHeatingCoolingState.HEAT]: typeof Characteristic.TargetHeatingCoolingState.HEAT;
   [Characteristic.TargetHeatingCoolingState.OFF]: typeof Characteristic.TargetHeatingCoolingState.OFF;
@@ -323,7 +323,7 @@ export class BoschRoomClimateControlAccessory {
     return state.temperature;
   }
 
-  private getCurrentHeatingCoolingStateFromState(state: AccessoryState): keyof SupportedCurrentHeatingCoolingState {
+  private getCurrentHeatingCoolingStateFromState(state: AccessoryState): keyof SupportedCurrentHeatingCoolingStates {
     if (state.deviceState === DeviceState.OFF) {
       return this.platform.Characteristic.CurrentHeatingCoolingState.OFF;
     }
@@ -335,7 +335,7 @@ export class BoschRoomClimateControlAccessory {
     return this.platform.Characteristic.CurrentHeatingCoolingState.HEAT;
   }
 
-  private getTargetHeatingCoolingStateFromState(state: AccessoryState): keyof SupportedTargetHeatingCoolingState {
+  private getTargetHeatingCoolingStateFromState(state: AccessoryState): keyof SupportedTargetHeatingCoolingStates {
     switch(state.deviceState) {
       case DeviceState.AUTO:
         return this.platform.Characteristic.TargetHeatingCoolingState.AUTO;
@@ -347,7 +347,7 @@ export class BoschRoomClimateControlAccessory {
     }
   }
 
-  private async handleCurrentHeatingCoolingStateGet(): Promise<keyof SupportedCurrentHeatingCoolingState> {
+  private async handleCurrentHeatingCoolingStateGet(): Promise<keyof SupportedCurrentHeatingCoolingStates> {
     if (!this.state.available) {
       throw new Error('Device not available');
     }
@@ -358,7 +358,7 @@ export class BoschRoomClimateControlAccessory {
     return this.getCurrentHeatingCoolingStateFromState(state);
   }
 
-  private async handleTargetHeatingCoolingStateGet(): Promise<keyof SupportedTargetHeatingCoolingState> {
+  private async handleTargetHeatingCoolingStateGet(): Promise<keyof SupportedTargetHeatingCoolingStates> {
     if (!this.state.available) {
       throw new Error('Device not available');
     }
