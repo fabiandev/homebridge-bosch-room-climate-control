@@ -217,6 +217,8 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   }
 
   private async initializeRoomClimate() {
+    this.log.info('Initializing room climate devices...');
+
     const devices = await lastValueFrom(this.getDevices());
 
     for (const device of devices) {
@@ -255,8 +257,6 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   }
 
   private getDevices() {
-    this.log.info('Initializing room climate devices...');
-
     return this.bshb
       .getBshcClient()
       .getDevices()
