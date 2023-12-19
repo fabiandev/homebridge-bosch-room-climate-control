@@ -53,7 +53,10 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
       await this.initializeRoomClimate();
       await this.updateAccessories();
 
+      this.log.info('Starting long polling...');
       this.startLongPolling();
+
+      this.log.info('Starting periodic accessory updates...');
       this.startPeriodicAccessoryUpdates();
     });
 
@@ -229,8 +232,6 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
       return;
     }
 
-    this.log.info('Starting periodic accessory updates...');
-
     this.timeoutId = setTimeout(async () => {
       this.log.info('Running periodic accessory updates...');
 
@@ -296,8 +297,6 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   }
 
   private startLongPolling(): void {
-    this.log.info('Starting long polling...');
-
     if(this.longPollingId != null) {
       this.log.info(`Long polling has already been started with ID ${this.longPollingId}`);
       return;

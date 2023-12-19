@@ -137,8 +137,6 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private startPeriodicStateUpdates(): void {
-    this.log.info('Attempting to enable periodic state updates...');
-
     const minutes = this.platform.config.stateUpdates;
 
     if (minutes == null || minutes < 1) {
@@ -173,6 +171,7 @@ export class BoschRoomClimateControlAccessory {
 
     await this.initializeState();
 
+    this.log.info('Starting periodic state updates...');
     this.startPeriodicStateUpdates();
 
     this.log.info('Registering characteristic handlers...');
