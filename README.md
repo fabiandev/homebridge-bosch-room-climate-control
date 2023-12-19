@@ -20,26 +20,22 @@ The official and built-in HomeKit integration for Bosch Smart Home thermostats i
 
 See [`config.schema.json`](config.schema.json)
 
-## HomeKit Accessory
+## Features
 
-**Modes**
+- Switch between manual and automatic mode
+  - Mode `AUTO` sets the operation mode to automatic (using the defined schedules for the room climate)
+  - Mode `HEAT` sets the operation mode to manual (heating to the defined target temperature)
+- Pause heating
+  - Mode `OFF` sets the room control mode to off (pauses heating, setting the target temperature to 5°C)
+- Set the target temparature
+  - While in `AUTO` mode: set until the next scheduled target temperature change
+  - While in `HEAT` mode: set until the next manual target temperature or operation mode change
+- Measured temperature changes are reflected in realtime through events from the BSHC
+- Changes from outside (e.g., through the Bosch Smart Home app) are also reflected immediately
+- Add/remove new/unavilable room climate control devices automatically in periodic checks (frequency set with `accessoryUpdates` config)
+- Set devices to unavailable if state cannot be fetched in periodic updates (frequency set with `stateUpdates` config)
 
-The accessory is subscribed to events from the BSHC and will update its state automatically when switching between modes
-
-- `AUTO` Sets the operation mode to automatic (using the defined schedules for the room climate)
-- `HEAT` Sets the operation mode to manual (heating to the defined target temperature)
-- `OFF` Sets the room control mode to off (pauses heating, setting the target temperature to 5°C)
-
-**Temperature**
-
-- **Current temperature:** Measured temperature changes are reflected in realtime through events from the BSHC
-- **Target temperatur:** Changes from outside (e.g., through the Bosch Smart Home app) are also reflected immediately
-
-**Add/remove room climate control**
-
-Devices are periodically checked (see config) and removed or added automatically.
-
-**Scenes and automations**
+**Note for scenes and automations**
 
 In case you want to configure scenes or automations that switch between the thermostat modes (auto/heat/off), please make sure to use a third party app for the configuration – like [Eve for Matter & HomeKit](https://www.evehome.com/eve-app) – and omit setting the target temperature in the automation.
 
