@@ -216,10 +216,10 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     }
   }
 
-  private async initializeRoomClimate() {
+  private async initializeRoomClimate(): Promise<void> {
     this.log.info('Initializing room climate devices...');
 
-    const devices = await lastValueFrom(this.getDevices());
+    const devices = await this.getDevices();
 
     for (const device of devices) {
       await this.createAccessory(device);
@@ -256,28 +256,30 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     clearTimeout(this.timeoutId);
   }
 
-  private getDevices() {
-    return this.bshb
-      .getBshcClient()
-      .getDevices()
-      .pipe(
-        concatMap((response: BshbResponse<BoschDevice[]>) => {
-          const devices = response.parsedResponse;
-          return from(devices);
-        }), filter(device => {
-          const deviceServiceIds = Object.values(device.deviceServiceIds);
+  private async getDevices(): Promise<BoschDevice[]> {
+    return lastValueFrom(
+      this.bshb
+        .getBshcClient()
+        .getDevices()
+        .pipe(
+          concatMap((response: BshbResponse<BoschDevice[]>) => {
+            const devices = response.parsedResponse;
+            return from(devices);
+          }), filter(device => {
+            const deviceServiceIds = Object.values(device.deviceServiceIds);
 
-          return deviceServiceIds?.includes(BoschServiceId.RoomClimateControl)
+            return deviceServiceIds?.includes(BoschServiceId.RoomClimateControl)
             && deviceServiceIds?.includes(BoschServiceId.TemperatureLevel);
-        }),
-        toArray(),
-      );
+          }),
+          toArray(),
+        ),
+    );
   }
 
-  private async updateAccessories() {
+  private async updateAccessories(): Promise<void> {
     this.log.info('Updating accessories...');
 
-    const devices = await this.queue.add(async () => lastValueFrom(this.getDevices()));
+    const devices = await this.queue.add(async () => this.getDevices());
 
     for (const accessory of this.accessories) {
       const index = devices.findIndex(device => device.id === accessory.context.device.id);
@@ -354,7 +356,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
       .subscribe(() => {});
   }
 
-  private handleLongPollingResult(deviceServiceDataResult: BoschDeviceServiceData[]) {
+  private handleLongPollingResult(deviceServiceDataResult: BoschDeviceServiceData[]): void {
     this.log.debug('Handeling long polling result...');
     this.log.debug(pretty(deviceServiceDataResult));
 
@@ -408,7 +410,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     this.controllers.push(controller);
   }
 
-  private async removeAccessory(uuid: string) {
+  private async removeAccessory(uuid: string): Promise<void> {
     this.log.info(`Attempting to remove accesspry with UUID ${uuid}...`);
 
     const accessory = this.accessories.find(accessory => accessory.UUID === uuid);

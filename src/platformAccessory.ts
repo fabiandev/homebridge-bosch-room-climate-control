@@ -1,4 +1,4 @@
-import { Observable, switchMap, from, map, filter, lastValueFrom, toArray } from 'rxjs';
+import { switchMap, from, map, filter, lastValueFrom, toArray } from 'rxjs';
 import { Service, PlatformAccessory, Characteristic, CharacteristicValue, Logger } from 'homebridge';
 import { BshbResponse } from 'bosch-smart-home-bridge';
 
@@ -128,7 +128,7 @@ export class BoschRoomClimateControlAccessory {
   private async initializeState(): Promise<void> {
     return this.platform.queue.add(async () => {
       try {
-        await lastValueFrom(this.updateLocalState());
+        await this.updateLocalState();
       } catch(e) {
         this.log.warn('Could not fetch device state, setting accessory to unavailable...', e);
         this.setUnavailable();
@@ -239,24 +239,26 @@ export class BoschRoomClimateControlAccessory {
     return false;
   }
 
-  private updateLocalState(): Observable<BoschDeviceServiceData[]> {
-    return this.platform.bshb.getBshcClient().getDeviceServices(this.platformAccessory.context.device.id, 'all')
-      .pipe(
-        switchMap((response: BshbResponse<BoschDeviceServiceData[]>) => {
-          this.log.debug(
-            `Found ${(response.parsedResponse.length)} services for device with ID ${this.platformAccessory.context.device.id}`,
-          );
+  private async updateLocalState(): Promise<BoschDeviceServiceData[]> {
+    return lastValueFrom(
+      this.platform.bshb.getBshcClient().getDeviceServices(this.platformAccessory.context.device.id, 'all')
+        .pipe(
+          switchMap((response: BshbResponse<BoschDeviceServiceData[]>) => {
+            this.log.debug(
+              `Found ${(response.parsedResponse.length)} services for device with ID ${this.platformAccessory.context.device.id}`,
+            );
 
-          return from(response.parsedResponse);
-        }), filter(deviceServiceData => {
-          return deviceServiceData.id === BoschServiceId.RoomClimateControl
+            return from(response.parsedResponse);
+          }), filter(deviceServiceData => {
+            return deviceServiceData.id === BoschServiceId.RoomClimateControl
         || deviceServiceData.id === BoschServiceId.TemperatureLevel;
-        }), map(deviceServiceData => {
-          this.setLocalStateFromDeviceServiceData(deviceServiceData);
-          return deviceServiceData;
-        }),
-        toArray(),
-      );
+          }), map(deviceServiceData => {
+            this.setLocalStateFromDeviceServiceData(deviceServiceData);
+            return deviceServiceData;
+          }),
+          toArray(),
+        ),
+    );
   }
 
   private setLocalStateFromDeviceServiceData(deviceServiceData: BoschDeviceServiceData): void {
