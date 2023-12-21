@@ -5,12 +5,8 @@
             "platform": "BoschRoomClimateControl",
             "systemPassword": "secret",
             "host": "192.168.0.10",
-            "stateUpdates": 5,
-            "accessoryUpdates": 15,
-            "clientName": "Homebridge Room Climate Control",
-            "clientId": "homebridge-bosch-room-climate-control",
-            "clientCert": "-----BEGIN CERTIFICATE-----\nBASE64_CERTIFICATE\n-----END CERTIFICATE-----",
-            "clientKey": "-----BEGIN RSA PRIVATE KEY-----\nBASE64_PRIVATE_KEY\n-----END RSA PRIVATE KEY-----",
+            "stateUpdateFrequency": 5,
+            "accessoryUpdateFrequency": 15
         }
     ]
 }

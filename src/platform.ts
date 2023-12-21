@@ -227,7 +227,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   }
 
   private startPeriodicAccessoryUpdates(): void {
-    const minutes = this.config.accessoryUpdates;
+    const minutes = this.config.accessoryUpdateFrequency ?? this.config.accessoryUpdates ?? this.config.periodicUpdates;
 
     if (minutes == null || minutes < 1) {
       this.log.info('Periodic accessory updates are disabled');
@@ -235,7 +235,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     }
 
     this.timeoutId = setTimeout(async () => {
-      this.log.info('Running periodic accessory updates...');
+      this.log.debug('Running periodic accessory updates...');
 
       try {
         await this.updateAccessories();

@@ -126,6 +126,8 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async initializeState(): Promise<void> {
+    this.log.info('Updating state...');
+
     return this.platform.queue.add(async () => {
       try {
         await this.updateLocalState();
@@ -137,7 +139,7 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private startPeriodicStateUpdates(): void {
-    const minutes = this.platform.config.stateUpdates;
+    const minutes = this.platform.config.stateUpdateFrequency ?? this.platform.config.stateUpdates;
 
     if (minutes == null || minutes < 1) {
       this.log.info('Periodic updates are disabled');
@@ -145,7 +147,7 @@ export class BoschRoomClimateControlAccessory {
     }
 
     this.timeoutId = setTimeout(async () => {
-      this.log.info('Running periodic state update...');
+      this.log.debug('Running periodic state update...');
 
       try {
         await this.initializeState();
