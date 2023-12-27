@@ -22,18 +22,18 @@ See [`config.schema.json`](config.schema.json)
 
 ## Features
 
-- Switch between manual and automatic mode
+- **Switch mode** between manual and automatic
   - Mode `AUTO` sets the operation mode to automatic (using the defined schedules for the room climate)
   - Mode `HEAT` sets the operation mode to manual (heating to the defined target temperature)
-- Pause heating
+- **Pause heating**
   - Mode `OFF` sets the room control mode to off (pauses heating, setting the target temperature to 5°C)
-- Set the target temparature
+- **Set the target temparature**
   - While in `AUTO` mode: set until the next scheduled target temperature change
   - While in `HEAT` mode: set until the next manual target temperature or operation mode change
-- Measured temperature changes are reflected in realtime through events from the BSHC
-- Operation mode or target temperature changes are reflected immediately through events from the BSHC, also when set from outside (e.g., through the Bosch Smart Home app, or on a physical device)
-- Add/remove new/unavilable room climate control devices automatically in periodic checks (frequency set with `accessoryUpdateFrequency` config)
-- Set devices to unavailable if state cannot be fetched in periodic updates (frequency set with `stateUpdateFrequency` config)
+- **Update measured temperature changes in realtime** through events from the BSHC
+- **Reflect operation mode or target temperature changes immediately** through events from the BSHC, also when set from outside (e.g., through the Bosch Smart Home app, or on a physical device)
+- **Add/remove new/unavilable room climate control devices automatically** in periodic checks (frequency set with `accessoryUpdateFrequency` config)
+- Set devices to unavailable if state cannot be fetched in periodic updates or the current temperature is not available (frequency set with `stateUpdateFrequency` config)
 
 **Note for scenes and automations**
 
