@@ -178,7 +178,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     });
 
     if (platformId == null) {
-      this.log.info(`No platform ${this.log.debug('Config file is empty')} found in config`);
+      this.log.info(`No platform ${PLATFORM_NAME} found in config`);
       return;
     }
 
@@ -311,7 +311,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
         this.longPollingId = response.parsedResponse.result;
 
         if (this.longPollingId == null) {
-          this.log.info('Could not start long polling, no ID returned from API');
+          this.log.warn('Could not start long polling, no ID returned from API');
           return;
         }
 
@@ -381,7 +381,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     try {
       room = (await lastValueFrom<BshbResponse<BoschRoom>>(this.bshb.getBshcClient().getRoom(device.roomId))).parsedResponse;
     } catch(e) {
-      this.log.warn(`cannot add accessory for device ID ${device.id}, failed to fetch room`);
+      this.log.warn(`Cannot add accessory for device ID ${device.id}, failed to fetch room`);
       return;
     }
 
