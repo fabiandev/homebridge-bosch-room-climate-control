@@ -33,7 +33,7 @@ See [`config.schema.json`](config.schema.json)
 - **Update measured temperature changes in realtime** through events from the BSHC
 - **Reflect operation mode or target temperature changes immediately** through events from the BSHC, also when set from outside (e.g., through the Bosch Smart Home app, or on a physical device)
 - **Add/remove new/unavilable room climate control devices automatically** in periodic checks (frequency set with `accessoryUpdateFrequency` config)
-- **Set devices to unavailable** if state cannot be fetched in periodic updates or the current temperature is not available (frequency set with `stateUpdateFrequency` config)
+- **Set devices to unavailable** if state cannot be fetched in periodic updates (frequency set with `stateUpdateFrequency` config), or if the current temperature is not available 
 
 **Note for scenes and automations**
 
