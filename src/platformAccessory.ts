@@ -92,6 +92,8 @@ export class BoschRoomClimateControlAccessory {
   }
 
   public setUnavailable() {
+    this.log.warn('Setting accessory to unavailable...');
+
     this.state.available = false;
 
     this.service.updateCharacteristic(
@@ -132,7 +134,7 @@ export class BoschRoomClimateControlAccessory {
       try {
         await this.updateLocalState();
       } catch(e) {
-        this.log.warn('Could not fetch device state, setting accessory to unavailable...', e);
+        this.log.warn('Could not fetch device state', e);
         this.setUnavailable();
       }
     });
@@ -278,7 +280,13 @@ export class BoschRoomClimateControlAccessory {
     if (this.isTemperatureLevelService(deviceServiceData)) {
       this.log.debug('Setting local state from temperature level device service data...');
 
-      this.state.currentTemperature = this.extractCurrentTemperature(deviceServiceData.state);
+      const currentTemperature = this.extractCurrentTemperature(deviceServiceData.state);
+      this.state.currentTemperature = currentTemperature;
+
+      if (currentTemperature == null) {
+        this.log.warn('No current temperature available in state update');
+        this.setUnavailable();
+      }
     }
   }
 
