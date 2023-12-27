@@ -6,7 +6,7 @@ import PQueue from 'p-queue';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { pretty } from './utils';
-import { BoschRoomClimateControlAccessory } from './platformAccessory';
+import { BoschRoomClimateControlAccessory } from './accessory';
 
 import {
   BoschDevice,
