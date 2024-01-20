@@ -95,15 +95,16 @@ export class BoschRoomClimateControlAccessory {
     this.state.available = false;
 
     this.service.updateCharacteristic(
-      this.platform.Characteristic.CurrentHeatingCoolingState, new Error('Current state unavailable'),
+      this.platform.Characteristic.CurrentHeatingCoolingState,
+      new Error('Current state unavailable'),
     );
   }
 
   public handleDeviceServiceDataUpdate(deviceServiceData: BoschDeviceServiceData): void {
-    this.setLocalStateFromDeviceServiceData(deviceServiceData);
+    this.updateLocalStateFromDeviceServiceData(deviceServiceData);
 
     const state = this.getLocalState();
-    this.updateCharacteristicStateWitAccessoryState(state, deviceServiceData);
+    this.updateCharacteristicStateFromAccessoryState(state, deviceServiceData);
   }
 
   private get log(): Logger {
@@ -130,7 +131,7 @@ export class BoschRoomClimateControlAccessory {
 
     return this.platform.queue.add(async () => {
       try {
-        await this.updateLocalState();
+        await this.refreshLocalState();
       } catch(e) {
         this.log.warn('Could not fetch device state', e);
         this.setUnavailable();
@@ -241,7 +242,7 @@ export class BoschRoomClimateControlAccessory {
     return false;
   }
 
-  private async updateLocalState(): Promise<BoschDeviceServiceData[]> {
+  private async refreshLocalState(): Promise<BoschDeviceServiceData[]> {
     return lastValueFrom(
       this.platform.bshb.getBshcClient().getDeviceServices(this.platformAccessory.context.device.id, 'all')
         .pipe(
@@ -255,7 +256,7 @@ export class BoschRoomClimateControlAccessory {
             return deviceServiceData.id === BoschServiceId.RoomClimateControl
         || deviceServiceData.id === BoschServiceId.TemperatureLevel;
           }), map(deviceServiceData => {
-            this.setLocalStateFromDeviceServiceData(deviceServiceData);
+            this.updateLocalStateFromDeviceServiceData(deviceServiceData);
             return deviceServiceData;
           }),
           toArray(),
@@ -263,7 +264,7 @@ export class BoschRoomClimateControlAccessory {
     );
   }
 
-  private setLocalStateFromDeviceServiceData(deviceServiceData: BoschDeviceServiceData): void {
+  private updateLocalStateFromDeviceServiceData(deviceServiceData: BoschDeviceServiceData): void {
     this.state.available = true;
 
     this.log.debug('Attempting to set local state from device service data...');
@@ -288,7 +289,7 @@ export class BoschRoomClimateControlAccessory {
     }
   }
 
-  private updateCharacteristicStateWitAccessoryState(state: AccessoryState, deviceServiceData?: BoschDeviceServiceData) {
+  private updateCharacteristicStateFromAccessoryState(state: AccessoryState, deviceServiceData?: BoschDeviceServiceData) {
     this.log.debug('Attempting to update characteristic with state...');
     this.log.debug(pretty(state));
 
@@ -470,7 +471,7 @@ export class BoschRoomClimateControlAccessory {
 
       const state: Partial<BoschClimateControlState> = {
         '@type': 'climateControlState',
-        setpointTemperature: Number(value),
+        setpointTemperature: +value,
       };
 
       await lastValueFrom(
