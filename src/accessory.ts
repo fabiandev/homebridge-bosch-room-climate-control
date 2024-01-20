@@ -358,9 +358,7 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async handleCurrentHeatingCoolingStateGet(): Promise<keyof SupportedCurrentHeatingCoolingStates> {
-    if (!this.state.available) {
-      throw new Error('Device not available');
-    }
+    this.throwErrorIfUnavailable();
 
     this.log.debug('Getting current heating cooling state...');
 
@@ -369,9 +367,7 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async handleTargetHeatingCoolingStateGet(): Promise<keyof SupportedTargetHeatingCoolingStates> {
-    if (!this.state.available) {
-      throw new Error('Device not available');
-    }
+    this.throwErrorIfUnavailable();
 
     this.log.debug('Getting target heating cooling state...');
 
@@ -380,9 +376,7 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async handleTargetHeatingCoolingStateSet(value: CharacteristicValue): Promise<void> {
-    if (!this.state.available) {
-      throw new Error('Device not available');
-    }
+    this.throwErrorIfUnavailable();
 
     await this.platform.queue.add(async () => {
       this.log.debug('Setting target heating cooling state...', value);
@@ -411,7 +405,11 @@ export class BoschRoomClimateControlAccessory {
           roomControlModeState['roomControlMode'] = BoschRoomControlMode.OFF;
           break;
         default:
-          throw new Error('Unknown target heating cooling state');
+          this.log.warn(`Unsupported target heating cooling state ${value}`);
+
+          throw new this.platform.api.hap.HapStatusError(
+            this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
+          );
       }
 
       if (roomControlModeState['roomControlMode'] != null) {
@@ -436,9 +434,7 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async handleCurrentTemperatureGet(): Promise<number> {
-    if (!this.state.available) {
-      throw new Error('Device not available');
-    }
+    this.throwErrorIfUnavailable();
 
     this.log.debug('Getting current temperature...');
 
@@ -447,9 +443,7 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async handleTargetTemperatureGet(): Promise<number> {
-    if (!this.state.available) {
-      throw new Error('Device not available');
-    }
+    this.throwErrorIfUnavailable();
 
     this.log.debug('Getting target temperature...');
 
@@ -458,9 +452,7 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async handleTargetTemperatureSet(value: CharacteristicValue): Promise<void> {
-    if (!this.state.available) {
-      throw new Error('Device not available');
-    }
+    this.throwErrorIfUnavailable();
 
     await this.platform.queue.add(async () => {
       this.log.debug('Setting target temperature...', value);
@@ -492,19 +484,27 @@ export class BoschRoomClimateControlAccessory {
   }
 
   private async handleTemperatureDisplayUnitsGet(): Promise<number> {
-    if (!this.state.available) {
-      throw new Error('Device not available');
-    }
+    this.throwErrorIfUnavailable();
 
     this.log.debug('Getting temperature display unit...');
     return this.platform.Characteristic.TemperatureDisplayUnits.CELSIUS;
   }
 
   private async handleTemperatureDisplayUnitsSet(value: CharacteristicValue): Promise<void> {
-    if (!this.state.available) {
-      throw new Error('Device not available');
-    }
+    this.throwErrorIfUnavailable();
 
     this.log.debug('Setting temperatur edisplay unit...', value);
+  }
+
+  private throwErrorIfUnavailable() {
+    if (this.state.available) {
+      return;
+    }
+
+    this.log.warn('Accessory not available');
+
+    throw new this.platform.api.hap.HapStatusError(
+      this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
+    );
   }
 }
