@@ -77,7 +77,7 @@ export class BoschRoomClimateControlAccessory {
     this.stopPeriodicStateUpdates();
   }
 
-  public getPath(deviceId: string, serviceId: BoschServiceId): string {
+  public getDeviceServicePath(deviceId: string, serviceId: BoschServiceId): string {
     return `devices/${deviceId}/services/${serviceId}`;
   }
 
@@ -416,7 +416,7 @@ export class BoschRoomClimateControlAccessory {
         await lastValueFrom(
           this.platform.bshb
             .getBshcClient()
-            .putState(this.getPath(deviceId, serviceId), roomControlModeState),
+            .putState(this.getDeviceServicePath(deviceId, serviceId), roomControlModeState),
         );
       }
 
@@ -425,7 +425,7 @@ export class BoschRoomClimateControlAccessory {
 
         await lastValueFrom(this.platform.bshb
           .getBshcClient()
-          .putState(this.getPath(deviceId, serviceId), operationModeState),
+          .putState(this.getDeviceServicePath(deviceId, serviceId), operationModeState),
         );
       }
     });
@@ -476,7 +476,7 @@ export class BoschRoomClimateControlAccessory {
       await lastValueFrom(
         this.platform.bshb
           .getBshcClient()
-          .putState(this.getPath(deviceId, serviceId), state),
+          .putState(this.getDeviceServicePath(deviceId, serviceId), state),
       );
     });
   }
