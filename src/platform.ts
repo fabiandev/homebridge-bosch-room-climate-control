@@ -290,7 +290,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     }
 
     for (const device of devices) {
-      const index = this.controllers.findIndex(accessory => accessory.getDevice().id === device.id);
+      const index = this.controllers.findIndex(accessory => accessory.getDeviceContext().id === device.id);
 
       if (index === -1) {
         await this.createAccessory(device);
@@ -420,7 +420,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
       return;
     }
 
-    const controller = this.controllers.find(controller => controller.getDevice().id === accessory.context.device.id);
+    const controller = this.controllers.find(controller => controller.getDeviceContext().id === accessory.context.device.id);
 
     if (controller != null) {
       controller.dispose();

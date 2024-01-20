@@ -81,7 +81,7 @@ export class BoschRoomClimateControlAccessory {
     return `devices/${deviceId}/services/${serviceId}`;
   }
 
-  public getDevice(): BoschDevice {
+  public getDeviceContext(): BoschDevice {
     return this.platformAccessory.context.device;
   }
 
