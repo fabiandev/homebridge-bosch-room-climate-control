@@ -1,6 +1,5 @@
-import { switchMap, from, map, filter, lastValueFrom, toArray } from 'rxjs';
-import { Service, PlatformAccessory, Characteristic, CharacteristicValue, Logger } from 'homebridge';
-import { BshbResponse } from 'bosch-smart-home-bridge';
+import { Service, PlatformAccessory, Characteristic, CharacteristicValue, Logger, HAPStatus } from 'homebridge';
+import { BshbError, BshbErrorType } from 'bosch-smart-home-bridge';
 
 import * as packageJson from './package.json';
 import { BoschRoomClimateControlPlatform } from './platform';
@@ -10,11 +9,12 @@ import { pretty } from './utils';
 import {
   AccessoryContext,
   BoschDeviceServiceData,
-  BoschServiceId,
   BoschOperationMode,
   BoschRoomControlMode,
   BoschTemperatureLevelState,
   BoschDevice,
+  isRoomClimateControlService,
+  isTemperatureLevelService,
 } from './types';
 
 export enum DeviceState {
@@ -74,108 +74,48 @@ export class BoschRoomClimateControlAccessory {
 
   public dispose(): void {
     this.log.info('Disposing accessory...');
-    this.stopPeriodicStateUpdates();
-  }
-
-  public getDeviceServicePath(deviceId: string, serviceId: BoschServiceId): string {
-    return `devices/${deviceId}/services/${serviceId}`;
+    this.stopPeriodicStateSync();
   }
 
   public getDeviceContext(): BoschDevice {
     return this.platformAccessory.context.device;
   }
 
+  public getDeviceId(): string {
+    return this.getDeviceContext().id;
+  }
+
   public getLocalState(): AccessoryState {
     return { ...this.state };
   }
 
-  public setUnavailable() {
+  public setUnavailable(): void {
     this.log.warn('Setting accessory to unavailable...');
 
     this.state.available = false;
 
     this.service.updateCharacteristic(
-      this.platform.Characteristic.CurrentHeatingCoolingState,
+      this.platform.Characteristic.CurrentTemperature,
       new Error('Current state unavailable'),
     );
   }
 
-  public handleDeviceServiceDataUpdate(deviceServiceData: BoschDeviceServiceData): void {
-    this.updateLocalStateFromDeviceServiceData(deviceServiceData);
-
-    const state = this.getLocalState();
-    this.updateCharacteristicStateFromAccessoryState(state, deviceServiceData);
-  }
-
-  private get log(): Logger {
-    const prefix = `[${this.platformAccessory.displayName}]`;
-
-    const logger = (method: string) => {
-      return (message: string, ...parameters: any[]) => {
-        return this.platform.log[method](`${prefix} ${message}`, ...parameters);
-      };
-    };
-
-    return {
-      debug: logger('debug'),
-      info: logger('info'),
-      warn: logger('warn'),
-      log: logger('log'),
-      error: logger('error'),
-      prefix: `${this.platform.log.prefix} ${prefix}`,
-    };
-  }
-
-  private async initializeState(): Promise<void> {
-    this.log.info('Updating state...');
-
-    return this.platform.queue.add(async () => {
-      try {
-        await this.refreshLocalState();
-      } catch(e) {
-        this.log.warn('Could not fetch device state', e);
-        this.setUnavailable();
-      }
-    });
-  }
-
-  private startPeriodicStateUpdates(): void {
-    const minutes = this.platform.config.stateUpdateFrequency ?? this.platform.config.stateUpdates;
-
-    if (minutes == null || minutes < 1) {
-      this.log.info('Periodic updates are disabled');
-      return;
+  public onBoschEvent(deviceServiceData: BoschDeviceServiceData): void {
+    try {
+      this.updateLocalState(deviceServiceData);
+      this.updateCharacteristics(this.getLocalState());
+    } catch(e) {
+      this.setUnavailable();
     }
-
-    this.timeoutId = setTimeout(async () => {
-      this.log.debug('Running periodic state update...');
-
-      try {
-        await this.initializeState();
-      } catch(e) {
-        this.log.warn(`Could not update state during periodic update, retrying during next cycle in ${minutes} minutes`, e);
-      }
-
-      this.startPeriodicStateUpdates();
-    }, minutes * 60 * 1000);
-  }
-
-  private stopPeriodicStateUpdates(): void {
-    if (this.timeoutId == null) {
-      return;
-    }
-
-    this.log.info('Stopping periodic state updates...');
-    clearTimeout(this.timeoutId);
   }
 
   private async registerHandlers(): Promise<void> {
     this.log.info('Initializing accessory...');
 
-    await this.initializeState();
+    await this.syncAccessory();
 
     this.log.info('Starting periodic state updates...');
-    this.startPeriodicStateUpdates();
+    this.startPeriodicStateSync();
 
     this.log.info('Registering characteristic handlers...');
 
@@ -224,135 +164,104 @@ export class BoschRoomClimateControlAccessory {
       });
   }
 
-  private isRoomClimateControlService(deviceServiceData: BoschDeviceServiceData)
-  : deviceServiceData is BoschDeviceServiceData<BoschClimateControlState> {
-    if (deviceServiceData.id === BoschServiceId.RoomClimateControl) {
-      return true;
+  private async syncAccessory(): Promise<void> {
+    this.log.info('Updating state...');
+
+    return this.platform.queue.add(async () => {
+      const deviceId = this.getDeviceId();
+
+      try {
+        (await this.platform.bshcApi.getServiceData(deviceId))
+          .forEach(data => {
+            this.updateLocalState(data);
+          });
+      } catch(e) {
+        this.log.warn('Could not fetch device state');
+        this.setUnavailable();
+        return;
+      }
+
+      if (this.state.currentTemperature == null) {
+        this.log.warn('Current temperature is not available');
+        this.setUnavailable();
+        return;
+      }
+
+      this.updateCharacteristics(this.getLocalState());
+    });
+  }
+
+  private startPeriodicStateSync(): void {
+    const minutes = this.platform.config.stateSyncFrequency ??
+      this.platform.config.stateUpdateFrequency ??
+      this.platform.config.stateUpdates;
+
+    if (minutes == null || minutes < 1) {
+      this.log.info('Periodic updates are disabled');
+      return;
     }
 
-    return false;
+    this.timeoutId = setTimeout(async () => {
+      this.log.debug('Running periodic state update...');
+
+      try {
+        await this.syncAccessory();
+      } catch(e) {
+        this.log.warn(`Could not update state during periodic update, retrying during next cycle in ${minutes} minutes`, e);
+      }
+
+      this.startPeriodicStateSync();
+    }, minutes * 60 * 1000);
   }
 
-  private isTemperatureLevelService(deviceServiceData: BoschDeviceServiceData)
-  : deviceServiceData is BoschDeviceServiceData<BoschTemperatureLevelState> {
-    if (deviceServiceData.id === BoschServiceId.TemperatureLevel) {
-      return true;
+  private stopPeriodicStateSync(): void {
+    if (this.timeoutId == null) {
+      return;
     }
 
-    return false;
+    this.log.info('Stopping periodic state updates...');
+    clearTimeout(this.timeoutId);
   }
 
-  private async refreshLocalState(): Promise<BoschDeviceServiceData[]> {
-    return lastValueFrom(
-      this.platform.bshb.getBshcClient().getDeviceServices(this.platformAccessory.context.device.id, 'all')
-        .pipe(
-          switchMap((response: BshbResponse<BoschDeviceServiceData[]>) => {
-            this.log.debug(
-              `Found ${(response.parsedResponse.length)} services for device with ID ${this.platformAccessory.context.device.id}`,
-            );
-
-            return from(response.parsedResponse);
-          }), filter(deviceServiceData => {
-            return deviceServiceData.id === BoschServiceId.RoomClimateControl
-        || deviceServiceData.id === BoschServiceId.TemperatureLevel;
-          }), map(deviceServiceData => {
-            this.updateLocalStateFromDeviceServiceData(deviceServiceData);
-            return deviceServiceData;
-          }),
-          toArray(),
-        ),
-    );
-  }
-
-  private updateLocalStateFromDeviceServiceData(deviceServiceData: BoschDeviceServiceData): void {
+  private updateLocalState(deviceServiceData: BoschDeviceServiceData): void {
     this.state.available = true;
 
-    this.log.debug('Attempting to set local state from device service data...');
+    this.log.debug(`Attempting to set local state from device service data ${deviceServiceData.id}...`);
 
-    if (this.isRoomClimateControlService(deviceServiceData)) {
+    if (isRoomClimateControlService(deviceServiceData)) {
       this.log.debug('Setting local state from room climate control device service data...');
 
       this.state.deviceState = this.extractDeviceState(deviceServiceData.state);
       this.state.targetTemperature = deviceServiceData.state.setpointTemperature;
     }
 
-    if (this.isTemperatureLevelService(deviceServiceData)) {
+    if (isTemperatureLevelService(deviceServiceData)) {
       this.log.debug('Setting local state from temperature level device service data...');
 
       const currentTemperature = this.extractCurrentTemperature(deviceServiceData.state);
       this.state.currentTemperature = currentTemperature;
-
-      if (currentTemperature == null) {
-        this.log.warn('No current temperature available in state update');
-        this.setUnavailable();
-      }
     }
   }
 
-  private updateCharacteristicStateFromAccessoryState(state: AccessoryState, deviceServiceData?: BoschDeviceServiceData) {
+  private updateCharacteristics(state: AccessoryState) {
     this.log.debug('Attempting to update characteristic with state...');
     this.log.debug(pretty(state));
 
-    if (deviceServiceData == null || this.isRoomClimateControlService(deviceServiceData)) {
-      this.log.debug(`Updating target temperature to ${state.targetTemperature}...`);
-      this.service.updateCharacteristic(this.platform.Characteristic.TargetTemperature, state.targetTemperature);
+    this.log.debug(`Updating target temperature to ${state.targetTemperature}...`);
+    this.service.updateCharacteristic(this.platform.Characteristic.TargetTemperature, state.targetTemperature);
 
-      const targetHeatingCoolingState = this.getTargetHeatingCoolingStateFromState(state);
-      this.log.debug(`Updating target heating cooling state to ${targetHeatingCoolingState}...`);
-      this.service.updateCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState, targetHeatingCoolingState);
+    const targetHeatingCoolingState = this.getTargetHeatingCoolingState(state);
+    this.log.debug(`Updating target heating cooling state to ${targetHeatingCoolingState}...`);
+    this.service.updateCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState, targetHeatingCoolingState);
 
-      const currentHeatingCoolingState = this.getCurrentHeatingCoolingStateFromState(state);
-      this.log.debug(`Updating current heating cooling state to ${currentHeatingCoolingState}...`);
-      this.service.updateCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState, currentHeatingCoolingState);
-    }
+    const currentHeatingCoolingState = this.getCurrentHeatingCoolingState(state);
+    this.log.debug(`Updating current heating cooling state to ${currentHeatingCoolingState}...`);
+    this.service.updateCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState, currentHeatingCoolingState);
 
-    if (deviceServiceData == null || this.isTemperatureLevelService(deviceServiceData)) {
+    // Accessory is set to unavailable if current temperature is not available
+    if (state.currentTemperature != null) {
       this.log.debug(`Updating current temperature to ${state.currentTemperature}...`);
       this.service.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, state.currentTemperature);
-    }
-  }
-
-  private extractDeviceState(state: BoschClimateControlState): DeviceState {
-    if (state.roomControlMode === BoschRoomControlMode.OFF) {
-      return DeviceState.OFF;
-    }
-
-    if (state.operationMode === BoschOperationMode.AUTOMATIC) {
-      return DeviceState.AUTO;
-    }
-
-    if (state.operationMode === BoschOperationMode.MANUAL) {
-      return DeviceState.MANUAL;
-    }
-
-    return DeviceState.OFF;
-  }
-
-  private extractCurrentTemperature(state: BoschTemperatureLevelState): number {
-    return state.temperature;
-  }
-
-  private getCurrentHeatingCoolingStateFromState(state: AccessoryState) {
-    if (state.deviceState === DeviceState.OFF) {
-      return this.platform.Characteristic.CurrentHeatingCoolingState.OFF;
-    }
-
-    if (state.currentTemperature > state.targetTemperature) {
-      return this.platform.Characteristic.CurrentHeatingCoolingState.OFF;
-    }
-
-    return this.platform.Characteristic.CurrentHeatingCoolingState.HEAT;
-  }
-
-  private getTargetHeatingCoolingStateFromState(state: AccessoryState): AccessoryTargetHeatingCoolingState {
-    switch(state.deviceState) {
-      case DeviceState.AUTO:
-        return this.platform.Characteristic.TargetHeatingCoolingState.AUTO;
-      case DeviceState.MANUAL:
-        return this.platform.Characteristic.TargetHeatingCoolingState.HEAT;
-      case DeviceState.OFF:
-      default:
-        return this.platform.Characteristic.TargetHeatingCoolingState.OFF;
     }
   }
 
@@ -362,7 +271,7 @@ export class BoschRoomClimateControlAccessory {
     this.log.debug('Getting current heating cooling state...');
 
     const state = this.getLocalState();
-    return this.getCurrentHeatingCoolingStateFromState(state);
+    return this.getCurrentHeatingCoolingState(state);
   }
 
   private async handleTargetHeatingCoolingStateGet(): Promise<AccessoryTargetHeatingCoolingState> {
@@ -371,64 +280,38 @@ export class BoschRoomClimateControlAccessory {
     this.log.debug('Getting target heating cooling state...');
 
     const state = this.getLocalState();
-    return this.getTargetHeatingCoolingStateFromState(state);
+    return this.getTargetHeatingCoolingState(state);
   }
 
   private async handleTargetHeatingCoolingStateSet(value: CharacteristicValue): Promise<void> {
-    this.throwErrorIfUnavailable();
-
     await this.platform.queue.add(async () => {
+      this.throwErrorIfUnavailable();
+
       this.log.debug('Setting target heating cooling state...', value);
 
-      const deviceId = this.platformAccessory.context.device.id;
-      const serviceId = BoschServiceId.RoomClimateControl;
+      const deviceId = this.getDeviceId();
 
-      const roomControlModeState = {
-        '@type': 'climateControlState',
-      };
-
-      const operationModeState = {
-        '@type': 'climateControlState',
-      };
-
-      switch(value) {
-        case this.platform.Characteristic.TargetHeatingCoolingState.AUTO:
-          operationModeState['operationMode'] = BoschOperationMode.AUTOMATIC;
-          roomControlModeState['roomControlMode'] = BoschRoomControlMode.HEATING;
-          break;
-        case this.platform.Characteristic.TargetHeatingCoolingState.HEAT:
-          operationModeState['operationMode'] = BoschOperationMode.MANUAL;
-          roomControlModeState['roomControlMode'] = BoschRoomControlMode.HEATING;
-          break;
-        case this.platform.Characteristic.TargetHeatingCoolingState.OFF:
-          roomControlModeState['roomControlMode'] = BoschRoomControlMode.OFF;
-          break;
-        default:
-          this.log.warn(`Unsupported target heating cooling state ${value}`);
-
-          throw new this.platform.api.hap.HapStatusError(
-            this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
-          );
+      try {
+        switch(value) {
+          case this.platform.Characteristic.TargetHeatingCoolingState.AUTO:
+            await this.platform.bshcApi.setHeatingAuto(deviceId);
+            return;
+          case this.platform.Characteristic.TargetHeatingCoolingState.HEAT:
+            await this.platform.bshcApi.setHeatingManual(deviceId);
+            return;
+          case this.platform.Characteristic.TargetHeatingCoolingState.OFF:
+            await this.platform.bshcApi.setHeatingOff(deviceId);
+            return;
+        }
+      } catch(e) {
+        this.throwHapStatusError(e as BshbError);
       }
 
-      if (roomControlModeState['roomControlMode'] != null) {
-        this.log.debug('Setting room control mode...', roomControlModeState['roomControlMode']);
+      this.log.warn(`Unsupported target heating cooling state ${value}`);
 
-        await lastValueFrom(
-          this.platform.bshb
-            .getBshcClient()
-            .putState(this.getDeviceServicePath(deviceId, serviceId), roomControlModeState),
-        );
-      }
-
-      if (operationModeState['operationMode'] != null) {
-        this.log.debug('Setting operation mode...', operationModeState['operationMode']);
-
-        await lastValueFrom(this.platform.bshb
-          .getBshcClient()
-          .putState(this.getDeviceServicePath(deviceId, serviceId), operationModeState),
-        );
-      }
+      throw new this.platform.api.hap.HapStatusError(
+        HAPStatus.INVALID_VALUE_IN_REQUEST,
+      );
     });
   }
 
@@ -457,7 +340,7 @@ export class BoschRoomClimateControlAccessory {
       this.log.debug('Setting target temperature...', value);
 
       if (this.getLocalState().deviceState === DeviceState.OFF) {
-        this.log.debug('Cannot set target temperature while room control mode is set to off');
+        this.log.warn('Cannot set target temperature while room control mode is set to off');
         return;
       }
 
@@ -466,19 +349,13 @@ export class BoschRoomClimateControlAccessory {
         return;
       }
 
-      const deviceId = this.platformAccessory.context.device.id;
-      const serviceId = BoschServiceId.RoomClimateControl;
+      const deviceId = this.getDeviceId();
 
-      const state: Partial<BoschClimateControlState> = {
-        '@type': 'climateControlState',
-        setpointTemperature: +value,
-      };
-
-      await lastValueFrom(
-        this.platform.bshb
-          .getBshcClient()
-          .putState(this.getDeviceServicePath(deviceId, serviceId), state),
-      );
+      try {
+        await this.platform.bshcApi.setTargetTemperature(deviceId, +value);
+      } catch(e) {
+        this.throwHapStatusError(e as BshbError);
+      }
     });
   }
 
@@ -493,6 +370,58 @@ export class BoschRoomClimateControlAccessory {
     this.throwErrorIfUnavailable();
 
     this.log.debug('Setting temperatur edisplay unit...', value);
+
+    if(value !== this.platform.Characteristic.TemperatureDisplayUnits.CELSIUS) {
+      this.log.error(`Unsupported temperature display unit ${value}`);
+
+      throw new this.platform.api.hap.HapStatusError(
+        HAPStatus.INVALID_VALUE_IN_REQUEST,
+      );
+    }
+  }
+
+  private extractDeviceState(boschState: BoschClimateControlState): DeviceState {
+    if (boschState.roomControlMode === BoschRoomControlMode.OFF) {
+      return DeviceState.OFF;
+    }
+
+    if (boschState.operationMode === BoschOperationMode.AUTOMATIC) {
+      return DeviceState.AUTO;
+    }
+
+    if (boschState.operationMode === BoschOperationMode.MANUAL) {
+      return DeviceState.MANUAL;
+    }
+
+    return DeviceState.OFF;
+  }
+
+  private extractCurrentTemperature(boschState: BoschTemperatureLevelState): number {
+    return boschState.temperature;
+  }
+
+  private getCurrentHeatingCoolingState(state: AccessoryState) {
+    if (state.deviceState === DeviceState.OFF) {
+      return this.platform.Characteristic.CurrentHeatingCoolingState.OFF;
+    }
+
+    if (state.currentTemperature > state.targetTemperature) {
+      return this.platform.Characteristic.CurrentHeatingCoolingState.OFF;
+    }
+
+    return this.platform.Characteristic.CurrentHeatingCoolingState.HEAT;
+  }
+
+  private getTargetHeatingCoolingState(state: AccessoryState): AccessoryTargetHeatingCoolingState {
+    switch(state.deviceState) {
+      case DeviceState.AUTO:
+        return this.platform.Characteristic.TargetHeatingCoolingState.AUTO;
+      case DeviceState.MANUAL:
+        return this.platform.Characteristic.TargetHeatingCoolingState.HEAT;
+      case DeviceState.OFF:
+      default:
+        return this.platform.Characteristic.TargetHeatingCoolingState.OFF;
+    }
   }
 
   private throwErrorIfUnavailable() {
@@ -503,7 +432,46 @@ export class BoschRoomClimateControlAccessory {
     this.log.warn('Accessory not available');
 
     throw new this.platform.api.hap.HapStatusError(
-      this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE,
+      HAPStatus.SERVICE_COMMUNICATION_FAILURE,
     );
+  }
+
+  private throwHapStatusError(error: BshbError): void {
+    const e = error as BshbError;
+    this.log.error(e.message);
+
+    switch (e.errorType) {
+      case BshbErrorType.TIMEOUT:
+        throw new this.platform.api.hap.HapStatusError(
+          HAPStatus.OPERATION_TIMED_OUT,
+        );
+      case BshbErrorType.PARSING:
+        throw new this.platform.api.hap.HapStatusError(
+          HAPStatus.INVALID_VALUE_IN_REQUEST,
+        );
+      default:
+        throw new this.platform.api.hap.HapStatusError(
+          HAPStatus.SERVICE_COMMUNICATION_FAILURE,
+        );
+    }
+  }
+
+  private get log(): Logger {
+    const prefix = `[${this.platformAccessory.displayName}]`;
+
+    const logger = (method: string) => {
+      return (message: string, ...parameters: any[]) => {
+        return this.platform.log[method](`${prefix} ${message}`, ...parameters);
+      };
+    };
+
+    return {
+      debug: logger('debug'),
+      info: logger('info'),
+      warn: logger('warn'),
+      log: logger('log'),
+      error: logger('error'),
+      prefix: `${this.platform.log.prefix} ${prefix}`,
+    };
   }
 }

@@ -18,15 +18,15 @@
                 "type": "string",
                 "required": false
             },
-            "stateUpdateFrequency": {
-                "title": "State update frequency",
+            "stateSyncFrequency": {
+                "title": "State sync frequency",
                 "description": "Refresh the accessory state after a specified amount of minutes and check the availability (0 or lower = disabled, not recommended). The plugin reacts to changes of accessories, a periodic refresh is not required and does not disable event based updates through long polling, but improves the overall experience.",
                 "type": "number",
                 "default": 5,
                 "required": false
             },
-            "accessoryUpdateFrequency": {
-                "title": "Accessory update frequency",
+            "accessorySyncFrequency": {
+                "title": "Accessory sync frequency",
                 "description": "Fetch devices and handle removed and added room climate controls every specified amount of minutes (0 or lower = disabled, not recommended). Without this being enabled, the plugin needs to be restarted to update accessories from the API and add or remove them in HomeKit.",
                 "type": "number",
                 "default": 15,
@@ -54,6 +54,12 @@
                 "title": "Client private key, 2048bit (leave empty for auto-generation)",
                 "description": "base64 encoded content only, without BEGIN/END",
                 "type": "string",
+                "required": false
+            },
+            "disableVerboseLogs": {
+                "title": "Disable verbose logs in debug mode",
+                "description": "Do not log the fine log level from the api client",
+                "type": "boolean",
                 "required": false
             }
         }
