@@ -32,8 +32,8 @@ See [`config.schema.json`](config.schema.json)
   - While in `HEAT` mode: set until the next manual target temperature or operation mode change
 - **Update measured temperature changes in realtime** through events from the BSHC
 - **Reflect operation mode or target temperature changes immediately** through events from the BSHC, also when set from outside (e.g., through the Bosch Smart Home app, or on a physical device)
-- **Add/remove new/unavilable room climate control devices automatically** in periodic checks (frequency set with `accessoryUpdateFrequency` config)
-- **Set devices to unavailable** if state cannot be fetched in periodic updates (frequency set with `stateUpdateFrequency` config), or if the current temperature is not available 
+- **Add/remove new/unavilable room climate control devices automatically** in periodic check
+- **Set devices to unavailable** if state cannot be fetched in periodic syncs, or if the current temperature is not available 
 
 **Note for scenes and automations**
 
