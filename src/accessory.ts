@@ -341,12 +341,18 @@ export class BoschRoomClimateControlAccessory {
 
       if (this.getLocalState().deviceState === DeviceState.OFF) {
         this.log.warn('Cannot set target temperature while room control mode is set to off');
-        return;
+
+        throw new this.platform.api.hap.HapStatusError(
+          HAPStatus.INVALID_VALUE_IN_REQUEST,
+        );
       }
 
       if (value == null) {
         this.log.debug('No value provided for target temperature');
-        return;
+
+        throw new this.platform.api.hap.HapStatusError(
+          HAPStatus.INVALID_VALUE_IN_REQUEST,
+        );
       }
 
       const deviceId = this.getDeviceId();
