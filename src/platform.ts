@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import { API, APIEvent, Characteristic, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service } from 'homebridge';
-import { BoschSmartHomeBridgeBuilder, BshbUtils } from 'bosch-smart-home-bridge';
+import { BoschSmartHomeBridgeBuilder, BshbError, BshbUtils } from 'bosch-smart-home-bridge';
 import PQueue from 'p-queue';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
@@ -68,7 +68,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
 
       await this.initializeBoschSmartHomeBridge();
       await this.initializeRoomClimate();
-      await this.updateAccessories();
+      await this.syncAccessories();
 
       this.log.info('Starting long polling...');
       this.startLongPolling();
@@ -257,7 +257,9 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
       return;
     }
 
-    const controller = this.controllers.find(controller => controller.getDeviceContext().id === accessory.context.device.id);
+    const controller = this.controllers.find(controller => {
+      return controller.getDeviceContext().id === accessory.context.device.id;
+    });
 
     if (controller != null) {
       controller.dispose();
@@ -271,25 +273,40 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     this.accessories.splice(this.accessories.indexOf(accessory), 1);
   }
 
-  private async updateAccessories(): Promise<void> {
-    this.log.info('Updating accessories...');
+  private async syncAccessories(): Promise<void> {
+    this.log.info('Syncing accessories...');
 
-    const devices = await this.queue.add(async () => this.bshcApi.getDevices());
+    const devices = await this.queue.add(async () => {
+      try {
+        return this.bshcApi.getDevices();
+      } catch(e) {
+        this.log.error('Error fetiching devices', (e as BshbError).message);
+        return null;
+      }
+    });
 
-    for (const accessory of this.accessories) {
-      const index = devices.findIndex(device => device.id === accessory.context.device.id);
+    if (devices == null) {
+      this.log.info('Could not sync accessories, trying again next time');
+      return;
+    }
 
-      if (index === -1) {
-        await this.removeAccessory(accessory.UUID);
+    this.log.debug('Recieved devices to sync');
+    this.log.debug(pretty(devices));
+
+    for (const controller of this.controllers) {
+      const device = devices.find(device => device.id === controller.getDeviceContext().id);
+
+      if (device == null) {
+        await this.removeAccessory(controller.getPlatformAccessory().UUID);
       } else {
-        accessory.context.device = devices[index];
+        controller.getPlatformAccessory().context.device = device;
       }
     }
 
     for (const device of devices) {
-      const index = this.controllers.findIndex(accessory => accessory.getDeviceContext().id === device.id);
+      const controller = this.controllers.find(controller => controller.getDeviceContext().id === device.id);
 
-      if (index === -1) {
+      if (controller == null) {
         await this.createAccessory(device);
       }
     }
@@ -310,7 +327,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
       this.log.debug('Running periodic accessory updates...');
 
       try {
-        await this.updateAccessories();
+        await this.syncAccessories();
       } catch(e) {
         this.log.warn(`Could not update accessories, retrying during next cycle in ${minutes} minutes`, e);
       }
@@ -329,6 +346,8 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
   }
 
   private async startLongPolling(): Promise<void> {
+    this.log.info('Attempting to start long polling...');
+
     if(this.longPollingId != null) {
       this.log.info(`Long polling has already been started with ID ${this.longPollingId}`);
       return;
@@ -366,7 +385,16 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
 
     this.log.debug(`Opening long polling connection with ID ${this.longPollingId}...`);
 
-    const result = await this.bshcApi.poll(this.longPollingId);
+    let result: BoschDeviceServiceData[];
+
+    try {
+      result = await this.bshcApi.poll(this.longPollingId);
+    } catch(e) {
+      this.log.error('Failed to open long polling connection', (e as BshbError).message);
+      await this.stopLongPolling();
+      await this.startLongPolling();
+      return;
+    }
 
     this.handleLongPollingResult(result);
     this.poll();

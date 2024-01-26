@@ -81,6 +81,10 @@ export class BoschRoomClimateControlAccessory {
     return this.platformAccessory.context.device;
   }
 
+  public getPlatformAccessory(): PlatformAccessory<AccessoryContext> {
+    return this.platformAccessory;
+  }
+
   public getDeviceId(): string {
     return this.getDeviceContext().id;
   }
