@@ -297,14 +297,14 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     this.log.debug('Recieved devices to sync');
     this.log.debug(pretty(devices));
 
-    for (const controller of this.controllers) {
-      const device = devices.find(device => device.id === controller.getDeviceContext().id);
+    for (const accessory of this.accessories) {
+      const device = devices.find(device => device.id === accessory.context.device.id);
 
       if (device == null) {
-        await this.removeAccessory(controller.getPlatformAccessory().UUID);
+        await this.removeAccessory(accessory.UUID);
       } else {
-        controller.getPlatformAccessory().context.device = device;
-        await this.updateAccessory(controller.getPlatformAccessory());
+        accessory.context.device = device;
+        await this.updateAccessory(accessory);
       }
     }
 
