@@ -247,6 +247,10 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     this.controllers.push(controller);
   }
 
+  private async updateAccessory(accessory: PlatformAccessory): Promise<void> {
+    this.api.updatePlatformAccessories([accessory]);
+  }
+
   private async removeAccessory(uuid: string): Promise<void> {
     this.log.info(`Attempting to remove accesspry with UUID ${uuid}...`);
 
@@ -262,8 +266,8 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
     });
 
     if (controller != null) {
-      controller.dispose();
       controller.setUnavailable();
+      controller.dispose();
       this.controllers.splice(this.controllers.indexOf(controller), 1);
     }
 
@@ -300,6 +304,7 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
         await this.removeAccessory(controller.getPlatformAccessory().UUID);
       } else {
         controller.getPlatformAccessory().context.device = device;
+        await this.updateAccessory(controller.getPlatformAccessory());
       }
     }
 
