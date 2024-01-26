@@ -1,6 +1,6 @@
 {
   "name": "homebridge-bosch-room-climate-control",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Control multiple Bosch Smart Home devices through room climate control of the BSHC API",
   "engines": {
     "node": ">=18.16.0",
