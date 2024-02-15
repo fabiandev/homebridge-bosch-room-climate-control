@@ -251,21 +251,31 @@ export class BoschRoomClimateControlAccessory {
     this.log.debug('Attempting to update characteristic with state...');
     this.log.debug(pretty(state));
 
-    this.log.debug(`Updating target temperature to ${state.targetTemperature}...`);
-    this.service.updateCharacteristic(this.platform.Characteristic.TargetTemperature, state.targetTemperature);
+    const targetTemperature = state.targetTemperature;
+    if (targetTemperature !== this.service.getCharacteristic(this.platform.Characteristic.TargetTemperature).value) {
+      this.log.debug(`Updating target temperature to ${state.targetTemperature}...`);
+      this.service.updateCharacteristic(this.platform.Characteristic.TargetTemperature, targetTemperature);
+    }
 
     const targetHeatingCoolingState = this.getTargetHeatingCoolingState(state);
-    this.log.debug(`Updating target heating cooling state to ${targetHeatingCoolingState}...`);
-    this.service.updateCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState, targetHeatingCoolingState);
+    if (targetHeatingCoolingState !== this.service.getCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState).value) {
+      this.log.debug(`Updating target heating cooling state to ${targetHeatingCoolingState}...`);
+      this.service.updateCharacteristic(this.platform.Characteristic.TargetHeatingCoolingState, targetHeatingCoolingState);
+    }
 
     const currentHeatingCoolingState = this.getCurrentHeatingCoolingState(state);
-    this.log.debug(`Updating current heating cooling state to ${currentHeatingCoolingState}...`);
-    this.service.updateCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState, currentHeatingCoolingState);
+    if (currentHeatingCoolingState !== this.service.getCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState).value) {
+      this.log.debug(`Updating current heating cooling state to ${currentHeatingCoolingState}...`);
+      this.service.updateCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState, currentHeatingCoolingState);
+    }
 
-    // Accessory is set to unavailable if current temperature is not available
-    if (state.currentTemperature != null) {
+    const currentTemperature = state.currentTemperature;
+    if (
+      currentTemperature != null // Accessory is set to unavailable if current temperature is not available
+      && currentTemperature !== this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature).value
+    ) {
       this.log.debug(`Updating current temperature to ${state.currentTemperature}...`);
-      this.service.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, state.currentTemperature);
+      this.service.updateCharacteristic(this.platform.Characteristic.CurrentTemperature, currentTemperature);
     }
   }
 
