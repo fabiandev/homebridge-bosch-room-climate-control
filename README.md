@@ -16,6 +16,8 @@ The official and built-in HomeKit integration for Bosch Smart Home thermostats i
 2. Press the pairing button
 3. Start the plugin (restart Homebridge)
 
+> The system password can be removed again after the pairing process finished successfully.
+
 ## Settings
 
 See [`config.schema.json`](config.schema.json)
