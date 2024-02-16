@@ -236,7 +236,9 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
 
     this.log.info(`Adding new accessory for device ID ${device.id}...`);
 
-    const accessoryName = `${device.name} ${room?.name}`;
+    const roomName = room.name;
+    const deviceName = device.name?.replace(/[^a-z0-9]/gi, '') ?? 'Room Climate Control';
+    const accessoryName = `${roomName} ${deviceName}`;
 
     const accessory = new this.api.platformAccessory<AccessoryContext>(accessoryName, uuid);
     accessory.context.device = device;
