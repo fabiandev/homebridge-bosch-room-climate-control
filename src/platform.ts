@@ -1,5 +1,15 @@
 import * as fs from 'fs';
-import { API, APIEvent, Characteristic, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service } from 'homebridge';
+import {
+  API,
+  APIEvent,
+  Categories,
+  Characteristic,
+  DynamicPlatformPlugin,
+  Logger,
+  PlatformAccessory,
+  PlatformConfig,
+  Service,
+} from 'homebridge';
 import { BoschSmartHomeBridgeBuilder, BshbError, BshbUtils } from 'bosch-smart-home-bridge';
 import PQueue from 'p-queue';
 
@@ -226,6 +236,9 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
       this.log.info(`Restoring accessory for device ID ${device.id} from cache...`);
 
       existingAccessory.context.device = device;
+      existingAccessory.context.room = room;
+      existingAccessory.displayName = this.getAccessoryDisplayName(room.name, device.name);
+
       this.api.updatePlatformAccessories([existingAccessory]);
 
       const controller = new BoschRoomClimateControlAccessory(this, existingAccessory);
@@ -236,17 +249,23 @@ export class BoschRoomClimateControlPlatform implements DynamicPlatformPlugin {
 
     this.log.info(`Adding new accessory for device ID ${device.id}...`);
 
-    const roomName = room.name;
-    const deviceName = device.name?.replace(/[^a-z0-9]/gi, '') ?? 'Room Climate Control';
-    const accessoryName = `${roomName} ${deviceName}`;
+    const accessory = new this.api.platformAccessory<AccessoryContext>(
+      this.getAccessoryDisplayName(room.name, device.name),
+      uuid,
+      Categories.THERMOSTAT,
+    );
 
-    const accessory = new this.api.platformAccessory<AccessoryContext>(accessoryName, uuid);
     accessory.context.device = device;
+    accessory.context.room = room;
 
     this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
 
     const controller = new BoschRoomClimateControlAccessory(this, accessory);
     this.controllers.push(controller);
+  }
+
+  private getAccessoryDisplayName(roomName: string, deviceName: string): string {
+    return `${roomName} ${deviceName?.replace(/[^a-z0-9]/gi, '') ?? 'Room Climate Control'}`;
   }
 
   private async updateAccessory(accessory: PlatformAccessory): Promise<void> {
